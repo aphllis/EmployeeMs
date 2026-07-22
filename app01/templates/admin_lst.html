@@ -1,0 +1,60 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container" style="width: 80rem">
+    <div class="mb-2 d-flex">
+        <div class="me-auto">
+            <a class="btn btn-success btn-sm" href="/admin/add/" target="_blank">
+
+                <i class="bi bi-plus-circle-fill"></i> 新建管理员
+            </a>
+        </div>
+
+        <!--        搜索区-->
+        <form role="search" method="get" class="d-flex flex-row">
+            <input type="text" placeholder="搜索" class="form-control " name="q" value="{{search_data}}">
+            <button class="btn btn-outline-success " type="submit">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+    <div class="card ">
+        <div class="card-header align-items-centerr">
+            <i class="bi bi-list-ul"></i> 管理员列表
+        </div>
+        <div></div>
+        <table class="table table-bordered mb-0 text-center">
+            <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">姓名</th>
+                <th scope="col">密码</th>
+                <th scope="col">重置密码</th>
+                <th scope="col">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in queryset %}
+            <tr>
+                <th scope="row">{{obj.id}}</th>
+                <td>{{obj.username}}</td>
+                <td>*************</td>
+                <td><a href="/admin/{{obj.id}}/reset/" style="text-decoration: none">重置密码</a></td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="/admin/{{obj.id}}/edit/">编辑</a>
+                    <a class="btn btn-danger btn-sm" href="/admin/{{obj.id}}/del/">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div aria-label="Page navigation example" class="d-flex">
+        <ul class="pagination mt-2 me-auto">
+            {{ page_str }}
+        </ul>
+        <ul class="pagination mt-2">
+            {{ goto_page_str }}
+        </ul>
+    </div>
+</div>
+{% endblock %}

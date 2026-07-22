@@ -1,0 +1,247 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block css %}
+<style>
+    .custom-warning-modal .modal-header {
+        background-color: #ffc107; /* 警告颜色 */
+        color: #000; /* 文字颜色 */
+    }
+
+    .custom-warning-modal .modal-content {
+        border: none; /* 移除默认边框 */
+    }
+</style>
+
+
+{% endblock %}
+{% block content %}
+<div>
+    <div class="container" style="width: 80rem">
+        <div class="card m-auto mb-3">
+            <div class="card-header align-items-centerr">
+                <i class="bi bi-list-ul"></i> 新建任务
+            </div>
+            <div class="card-body ">
+                <form id="addForm" novalidate>
+                    <div class="row row-cols-2">
+                        {% for field in form %}
+                        <div class="col ">
+                            <div class="form-group mb-4" style="position: relative">
+                                <div class="form-label ">{{field.label}}</div>
+                                {{field}}
+                                <span class="errors_msg" style="color: red;font-size: 1em;position: absolute;"></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button id="btnAdd" type="button" class="btn btn-primary mt-2">提交</button>
+                </form>
+            </div>
+
+        </div>
+        <div class="card ">
+            <div class="card-header align-items-centerr">
+                <i class="bi bi-list-ul"></i> 任务列表
+            </div>
+            <div></div>
+            <table class="table table-bordered mb-0 text-center">
+                <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">级别</th>
+                    <th scope="col">任务名</th>
+                    <th scope="col">详细信息</th>
+                    <th scope="col">执行人</th>
+                    <th scope="col">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <th scope="row">{{obj.id}}</th>
+                    <td>{{obj.get_level_display}}</td>
+                    <td>{{obj.title}}</td>
+                    <td>{{obj.detail}}</td>
+                    <td>{{obj.executor.username}}</td>
+                    <td>
+                        <a class="btn btn-primary btn-sm" href="/admin/{{obj.id}}/edit/">编辑</a>
+                        <input type="button" class="btn btn-sm btn-danger btn-del" value="删除">
+                        <div class="modal fade" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel"
+                             aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content custom-warning-modal">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title" id="warningModalLabel">警告</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                                aria-label="Close"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        这是一个警告模态框的示例。
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭
+                                        </button>
+                                        <button type="button" class="btn btn-danger">确定</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div aria-label="Page navigation example" class="d-flex">
+            <ul class="pagination mt-2 me-auto">
+                {{ page_str }}
+            </ul>
+            <ul class="pagination mt-2">
+                {{ goto_page_str }}
+            </ul>
+        </div>
+
+    </div>
+    <!--        <h1>Ajax学习</h1>-->
+    <!--        <hr>-->
+
+    <!--        <h3>示例一</h3>-->
+    <!--方式二DOM:-->
+    <!--        <button class="btn btn-primary" onclick="clickme()" >点击</button>-->
+    <!--方式一jQuery:-->
+    <!--        <button class="btn btn-primary" id="btn1">点击</button>-->
+
+    <!--        <h3>示例二</h3>-->
+    <!--        <input type="text" id="user" placeholder="姓名">-->
+    <!--        <input type="text" id="age" placeholder="年龄">-->
+    <!--        <input type="button" id="btn2" class="btn btn-primary" value="点击">-->
+
+    <!--表单数据发送后台:-->
+    <!--        <h3>示例三</h3>-->
+    <!--        <form id="form3">-->
+    <!--            <input type="text" name="user" placeholder="姓名">-->
+    <!--            <input type="text" name="age" placeholder="年龄">-->
+    <!--            <input type="text" name="hobby" placeholder="爱好">-->
+    <!--        </form>-->
+    <!--        <input type="button" value="提交" class="btn btn-primary" id="btn3">-->
+    <!--    </div>-->
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/jquery-4.0.0.js'%}"></script>
+<script>
+    // //方式一jQuery:
+    // $(function () {
+    //     //页面框架加载完成之后自动执行
+    //     bindBtn1Event();
+    //     bindBtn2Event()
+    //     bindBtn3Event()
+    // })
+    // function bindBtn1Event() {
+    //     //找到id为btn1的button，绑定click事件，触发点击事件时执行$ajax
+    //     $('#btn1').click(function () {
+    //         $.ajax({
+    //             url: '/task/ajax/',
+    //             type: 'post',
+    //             data: {
+    //                 n1: 123,
+    //                 n2: 456
+    //             },
+    //             //设置dataType:'JSON' jQuery会自动将服务器返回的JSON格式的字符串解析为JavaScript对象。
+    //             //在回调函数中可以直接方位对象属性
+    //             dataType: 'json',
+    //             success: function (res) {
+    //                 console.log(res)
+    //                 console.log(res.status)
+    //                 console.log(res.data) //直接访问对象属性
+    //             }
+    //         })
+    //     })
+    // }
+    //
+    // function bindBtn2Event() {
+    //     $('#btn2').click(function () {
+    //         $.ajax({
+    //             url: '/task/ajax/',
+    //             type: 'post',
+    //             data: {
+    //                 user: $('#user').val(),
+    //                 age: $('#age').val()
+    //             },
+    //             success: function (res) {
+    //                 console.log(res)
+    //             }
+    //         })
+    //     })
+    // }
+    //
+    // function bindBtn3Event() {
+    //     $("#btn3").click(function () {
+    //         $.ajax({
+    //                 url: '/task/ajax/',
+    //                 type: 'post',
+    //                 data:$('#form3').serialize(),//表单数据发送后台
+    //                 dataType:'JSON',
+    //                 success:function (res){
+    //                     console.log(res)
+    //                 }
+    //             }
+    //         )
+    //     })
+    // }
+
+    //方式二DOM:
+    // function clickme() {
+    //     $.ajax({
+    //         url: '/task/ajax/',
+    //         type: 'post',
+    //         data: {
+    //             n1: 123,
+    //             n2: 456
+    //         },
+    //         success: function (res) {
+    //             console.log(res)
+    //         }
+    //     })
+    // }
+    $(function () {
+        bindEvent_btnAdd();
+        bindEvent_btnDel();
+    })
+
+    function bindEvent_btnAdd() {
+        $('#btnAdd').click(function () {
+            $(".errors_msg").empty();
+            $.ajax({
+                url: '/task/add/',
+                type: 'post',
+                data: $('#addForm').serialize(),
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        alert("添加成功");
+                        //js实现页面的自动刷新
+                        location.reload();
+                    } else {
+                        $.each(res.errors, function (name, data) {
+                            $("#id_" + name).next().text(data[0]);
+                            // console.log(name,data)
+
+                        })
+                    }
+                    console.log(res)
+                }
+            })
+        })
+    }
+
+    function bindEvent_btnDel() {
+        $(".btn-del").click(function () {
+            let mymodal=new bootstrap.Modal(document.getElementById('warningModal'));
+            mymodal.show();
+        })
+    }
+
+</script>
+{% endblock %}

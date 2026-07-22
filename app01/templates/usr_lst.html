@@ -1,0 +1,59 @@
+{% extends 'layout.html' %}
+{% block content %}
+
+<div class="container" style="width: 80rem">
+    <div class="mb-2">
+        <a class="btn btn-success btn-sm" href="/usr/modelform/add/" >
+            <i class="bi bi-plus-circle-fill"></i> 新建用户
+        </a>
+    </div>
+    <div class="card ">
+        <div class="card-header align-items-centerr">
+            <i class="bi bi-list-ul"></i> 用户列表
+        </div>
+        <div></div>
+        <table class="table table-bordered mb-0 text-center">
+            <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">姓名</th>
+                <th scope="col">性别</th>
+                <th scope="col">年龄</th>
+                <th scope="col">密码</th>
+                <th scope="col">余额</th>
+                <th scope="col">入职时间</th>
+                <th scope="col">所属部门</th>
+                <th scope="col">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in queryset %}
+            <tr>
+                <th scope="row">{{obj.id}}</th>
+                <td>{{obj.name}}</td>
+                <td>{{obj.get_gender_display}}</td>
+                <td>{{obj.age}}</td>
+                <td>{{obj.password}}</td>
+                <td>{{obj.account}}</td>
+                <td>{{obj.entrytime}}</td>
+                <td>{{obj.depart.title}}</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="/usr/{{obj.id}}/edit/">编辑</a>
+                    <a class="btn btn-danger btn-sm" href="/usr/{{obj.id}}/del/">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div aria-label="Page navigation example" class="d-flex">
+        <ul class="pagination mt-2 me-auto">
+            {{ page_str }}
+        </ul>
+        <ul class="pagination mt-2">
+            {{ goto_page_str }}
+        </ul>
+    </div>
+</div>
+
+{% endblock %}

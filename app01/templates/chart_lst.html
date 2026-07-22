@@ -1,0 +1,187 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block content %}
+<div class="container" style="height: 80rem">
+    <div class="card mb-2">
+        <div class="card-header">
+            折线图
+        </div>
+        <div class="card-body">
+            <div id='m1' style="width:100%;height:300px;" class="m-auto"></div>
+
+        </div>
+    </div>
+    <div class="row gx-2">
+        <div class="col col-xl-8">
+            <div class="card">
+                <div class="card-header">
+                    柱状图
+                </div>
+                <div class="card-body">
+                    <div id='m2' style="width:800px;height:400px;" class="m-auto"></div>
+                </div>
+            </div>
+        </div>
+        <div class="col col-xl-4">
+            <div class="card">
+                <div class="card-header">
+                    饼状图
+                </div>
+                <div class="card-body">
+                    <div id='m3' style="width:100%;height:400px;" class="m-auto"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script src="{%static 'js/echarts.js' %}"></script>
+<!--<script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>-->
+<script>
+    $(function () {
+        initline();
+        initbar();
+        initpie();
+    })
+
+    function initline() {
+
+        var chartDom = document.getElementById('m1');
+        var myChart = echarts.init(chartDom);
+        var option;
+
+        option = {
+            title: {
+                text: '分公司业绩图'
+            },
+            tooltip: {
+                trigger: 'axis'
+            },
+            legend: {
+                data: ['分公司1', '分公司2']
+            },
+            // grid: {
+            //     left: '3%',
+            //     right: '4%',
+            //     bottom: '3%',
+            //     containLabel: true
+            // },
+            toolbox: {
+                feature: {
+                    saveAsImage: {}
+                }
+            },
+            xAxis: {
+                type: 'category',
+                boundaryGap: false,
+                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
+            },
+            yAxis: {
+                type: 'value'
+            },
+            series: []
+        };
+        $.ajax({
+            url: "/chart/line/",
+            type: "get",
+            dataType: "JSON",
+            success: function (res) {
+                if (res.status) {
+                    option.series = res.data;
+                    option && myChart.setOption(option);
+                } else {
+                    alert('数据丢失')
+                }
+            }
+        })
+
+    }
+
+    function initbar() {
+        var myChart = echarts.init(document.getElementById('m2'));
+        var option = {
+            title: {
+                text: '员工销量月度汇总表',
+            },
+            tooltip: {},
+            legend: {
+                data: [],
+                bottom: 0
+            },
+            xAxis: {
+                data: []
+            },
+            yAxis: {},
+            series: [],
+        };
+        $.ajax({
+            url: '/chart/bar/',
+            type: 'get',
+            dataType: "JSON",
+            success: function (ref) {
+                if (ref.status) {
+                    console.log(ref.data)
+                    option.legend.data = ref.data.legend;
+                    option.series = ref.data.series;
+                    option.xAxis.data = ref.data.month;
+                    myChart.setOption(option);
+                }
+            }
+        })
+        // 使用刚指定的配置项和数据显示图表。
+    }
+
+    function initpie() {
+        var myChart = echarts.init(document.getElementById('m3'));
+        var option = {
+            title: {
+                text: '部门预算占比',
+                subtext: '',
+                left: 'center'
+            },
+            tooltip: {
+                // trigger: 'item'
+            },
+            legend: {
+                // orient: 'vertical',
+                // left: 'left'
+                bottom: 0
+            },
+            series: [
+                {
+                    name: '预算',
+                    type: 'pie',
+                    radius: '50%',
+                    data: [],
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }
+            ]
+        }
+        $.ajax({
+            url: '/chart/pie/',
+            type: 'get',
+            dataType: 'JSON',
+            success: function (res) {
+                if (res.status) {
+                    console.log(res.data);
+                    //data是在series列表的第一个元素中的对象所以要用索引0获取
+                    option.series[0].data = res.data;
+                    myChart.setOption(option);
+
+                } else {
+                    alert("数据获取失败");
+                }
+            }
+        })
+    }
+
+
+</script>
+{% endblock %}

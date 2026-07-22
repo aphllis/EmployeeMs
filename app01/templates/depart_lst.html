@@ -1,0 +1,138 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div>
+    <div class="container" style="width: 80rem">
+        <div class="mb-2">
+            <a class="btn btn-success btn-sm" href="/depart/add/">
+                <i class="bi bi-plus-circle-fill"></i> 新建部门
+            </a>
+            <button class="btn btn-sm btn-success" id="batch_add">
+                <i class="bi bi-plus-circle-fill"></i>
+                批量新建
+            </button>
+            <!--            <a class="btn btn-success btn-sm" href="/depart/add/" target="_blank">-->
+            <!--                <i class="bi bi-plus-circle-fill"></i> 批量新建-->
+            <!--            </a>-->
+        </div>
+        <div class="card">
+            <div class="card-header align-items-centerr">
+                <i class="bi bi-list-ul"></i> 部门列表
+            </div>
+            <div></div>
+            <table class="table table-bordered mb-0 text-center">
+                <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">名称</th>
+                    <th scope="col">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <!--                    <th scope="row">{{ obj.id}}</th>-->
+                    <th scope="row">{{ start_index|add:forloop.counter }}</th>
+                    <td>{{obj.title}}</td>
+                    <td>
+                        <a class="btn btn-primary btn-sm" href="/depart/edit/?nid={{ obj.id}}">编辑</a>
+                        <a class="btn btn-danger btn-sm" href="/depart/del/?nid={{ obj.id}}">删除</a>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div aria-label="Page navigation example" class="d-flex">
+            <ul class="pagination mt-2 me-auto">
+                {{ page_str }}
+            </ul>
+            <ul class="pagination mt-2">
+                {{ goto_page_str }}
+            </ul>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="Modal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header pb-1 pt-1">
+                <h4 class="modal-title fs-5" id="ModalLabel">上传文件</h4>
+                <div class="d-flex justify-content-end w-75">
+                    <h2 type="button" data-bs-dismiss="modal">
+                        <i class="bi bi-x" style="color: red;"></i>
+                    </h2>
+                </div>
+            </div>
+            <div class="modal-body">
+                <input type="file" name="excel_file" id="excel_file">
+                <button class="btn btn-primary btn-sm btn-save" type="button">上传</button>
+                <p id="message"></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+{% block js %}
+<script>
+    let mymodal;
+    $(function () {
+        mymodal = new bootstrap.Modal($("#Modal")[0]);
+        bindEvent_batch();
+    })
+
+    //获取CSRF Token，从浏览器cookie中
+    function getCookie(name) {
+        let cookieval = null;
+        if (document.cookie && document.cookie !== "") {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    //解码cookie
+                    cookieval = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieval;
+    }
+
+    function bindEvent_batch() {
+        $("#batch_add").click(function () {
+            mymodal.show();
+        })
+        //ajax请求上传文件到服务器
+        $(".btn-save").click(function () {
+            let fileInput = $("#excel_file")[0].files[0]
+            if (!fileInput) {
+                alert("请选择一个Excel文件");
+                return;
+            }
+            let formdata = new FormData();
+            formdata.append('excel_file', fileInput);
+            formdata.append('csrfmiddlewaretoken', getCookie('csrftoken'))
+            $.ajax({
+                url: '/depart/batch/',
+                type: 'post',
+                data: formdata,
+                dataType: "JSON",
+                success: function (res) {
+                    $("#message").text(res.message || '文件上传成功')
+                    location.reload()
+                    console.log(res)
+                },
+                error: function (jqXHR, textStatus, errorThrown) {
+                    let errorMsg = '上传失败';
+                    if (jqXHR.responseJSON && jqXHR.responseJSON.error) {
+                        errorMsg = jqXHR.responseJSON.error
+                    }
+                    $("#message").text(errorMsg)
+                    console.error('错误', textStatus, errorThrown)
+                }
+            })
+        })
+
+    }
+</script>
+{% endblock%}

@@ -1,0 +1,260 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block css %}
+<style>
+    .custom-warning-modal .modal-header {
+        background-color: #ffc107; /* 警告颜色 */
+        color: #000; /* 文字颜色 */
+    }
+
+    .custom-warning-modal .modal-content {
+        border: none; /* 移除默认边框 */
+    }
+</style>
+
+
+{% endblock %}
+{% block content %}
+<div>
+    <div class="container" style="width: 80rem">
+        <div class="card m-auto mb-3">
+            <div class="card-header align-items-centerr">
+                <i class="bi bi-list-ul"></i> 新建任务
+            </div>
+            <div class="card-body ">
+                <form id="addForm" novalidate>
+                    <div class="row row-cols-2">
+                        {% for field in form %}
+                        <div class="col ">
+                            <div class="form-group mb-4" style="position: relative">
+                                <div class="form-label ">{{field.label}}</div>
+                                {{field}}
+                                <span class="errors_msg" style="color: red;font-size: 1em;position: absolute;"></span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <button id="btnAdd" type="button" class="btn btn-primary mt-2">提交</button>
+                </form>
+            </div>
+
+        </div>
+        <div class="card ">
+            <div class="card-header align-items-centerr">
+                <i class="bi bi-list-ul"></i> 任务列表
+            </div>
+            <table class="table table-bordered mb-0 text-center">
+                <thead>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">级别</th>
+                    <th scope="col">任务名</th>
+                    <th scope="col">详细信息</th>
+                    <th scope="col">执行人</th>
+                    <th scope="col">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <th scope="row">{{obj.id}}</th>
+                    <td>{{obj.get_level_display}}</td>
+                    <td>{{obj.title}}</td>
+                    <td>{{obj.detail}}</td>
+                    <td>{{obj.executor.username}}</td>
+                    <td>
+                        <input uid="{{obj.id}}" type="button" class="btn btn-primary btn-sm btn-edit" value="编辑">
+                        <input uid="{{obj.id}}" type="button" class="btn btn-sm btn-danger btn-del" value="删除">
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div aria-label="Page navigation example" class="d-flex">
+            <ul class="pagination mt-2 me-auto">
+                {{ page_str }}
+            </ul>
+            <ul class="pagination mt-2">
+                {{ goto_page_str }}
+            </ul>
+        </div>
+
+    </div>
+    <div class="modal fade" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel"
+         aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content custom-warning-modal">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="warningModalLabel">警告</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"
+                            aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    删除数据可能将所有相关联数据一并删除！<br>
+                    <p id="demo"></p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-danger" id="confirm_del">确定</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">关闭
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="Modal" tabindex="-1" aria-labelledby="ModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h1 class="modal-title fs-5" id="ModalLabel"></h1>
+                </div>
+                <div class="modal-body">
+                    <form id="editForm" novalidate>
+                        <div class="row row-cols-2">
+                            {% for field in form %}
+                            <div class="col ">
+                                <div class="form-group mb-4" style="position: relative">
+                                    <div class="form-label ">{{field.label}}</div>
+                                    {{field}}
+                                    <span class="errors_msg"
+                                          style="color: red;font-size: 1em;position: absolute;"></span>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                    <button type="button" class="btn btn-primary" id="save">保存</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+{% endblock %}
+
+{% block js %}
+<script src="{% static 'js/jquery-4.0.0.js'%}"></script>
+<script>
+    var delete_id;
+    var edit_id = undefined;
+    var mymodal;
+    var myeditmodal;
+    $(function () {
+        bindEvent_btnAdd();
+        bindEvent_btnDel();
+        bindEvent_btnDetail();
+        bindEvent_btnEditSave();
+    })
+
+    function bindEvent_btnAdd() {
+        $('#btnAdd').click(function () {
+            $(".errors_msg").empty();
+            $.ajax({
+                url: '/task/add/',
+                type: 'post',
+                data: $('#addForm').serialize(),
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        alert("添加成功");
+                        //js实现页面的自动刷新
+                        location.reload();
+                    } else {
+                        $.each(res.errors, function (name, data) {
+                            $("#id_" + name).next().text(data[0]);
+                            // console.log(name,data)
+                        })
+                    }
+                    console.log(res);
+                }
+            })
+        })
+    }
+
+    function bindEvent_btnDel() {
+        $(".btn-del").click(function () {
+            mymodal = new bootstrap.Modal(document.getElementById('warningModal'));
+            mymodal.show();
+            delete_id = this.getAttribute("uid");
+        })
+        $("#confirm_del").click(function () {
+            $.ajax({
+                url: "/task/del/",
+                type: "get",
+                data: {uid: delete_id},
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        mymodal.hide();
+                        delete_id = 0;
+                        location.reload();
+                    } else {
+                        alert("删除失败：" + res.error);
+                    }
+                }
+            })
+        })
+
+    }
+
+    function bindEvent_btnDetail() {
+        $(".btn-edit").click(function () {
+            $("#editForm")[0].reset()
+            $("#ModalLabel").text("编辑");
+            edit_id = $(this).attr('uid');
+            myeditmodal = new bootstrap.Modal(document.getElementById('Modal'))
+            $.ajax({
+                url: "/task/detail/",
+                type: "get",
+                data: {uid: edit_id},
+                dataType: "JSON",
+                success: function (res) {
+                    if (res.status) {
+                        console.log(res.data);
+                        //show方法要在后面的each遍历方式之前，否则弹窗会为空
+                        myeditmodal.show();
+                        $.each(res.data, function (name, value) {
+                            $("#editForm").find("#id_" + name).val(value);
+                        })
+                    } else {
+                        alert(res.error);
+                        edit_id = undefined;
+                    }
+                }
+            })
+        })
+    }
+
+    function bindEvent_btnEditSave() {
+        $("#save").click(function () {
+            if (!edit_id) {
+                alert("数据错误，无法保存");
+            } else {
+                var format_data = $("#editForm").serializeArray()
+                format_data.push({name: "edit_id", value: edit_id})
+                $.ajax({
+                    url: "/task/edit/",
+                    type: "post",
+                    data: format_data,
+                    dataType: "JSON",
+                    success: function (res) {
+                        if (res.status) {
+                            // alert("保存成功")
+                            location.reload()
+                        } else {
+                            $.each(res.errors, function (name, data) {
+                                $("#editForm").find("#id_" + name).next().text(data[0])
+                            })
+                            edit_id = undefined
+                        }
+                    }
+                })
+            }
+        })
+    }
+</script>
+{% endblock %}

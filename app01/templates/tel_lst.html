@@ -1,0 +1,65 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container " style="width: 80rem">
+    <div class="mb-2 d-flex">
+        <div class="me-auto">
+            <a class="btn btn-success btn-sm me-auto" href="/tel/add/" >
+                <i class="bi bi-plus-circle-fill"></i> 新建靓号
+            </a>
+        </div>
+        <!--        搜索区-->
+        <form role="search" method="get" class="d-flex flex-row">
+            <input type="text" placeholder="搜索" class="form-control " name="q" value="{{search_data}}">
+            <button class="btn btn-outline-success " type="submit">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header align-items-centerr">
+            <i class="bi bi-list-ul"></i> 靓号列表
+        </div>
+        <div></div>
+        <table class="table table-bordered mb-0 text-center">
+            <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">号码</th>
+                <th scope="col">价格</th>
+                <th scope="col">等级</th>
+                <th scope="col">状态</th>
+                <th scope="col">操作</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for obj in query %}
+            <tr>
+                <!--<th scope="row">{{obj.id}}</th>-->
+                <!--过滤器让展示id连续，而不触动数据库自身id-->
+                <th scope="row">{{start_ind|add:forloop.counter}}</th>
+                <td>{{obj.mobile}}</td>
+                <td>{{obj.price}}</td>
+                <td>{{obj.get_level_display}}</td>
+                <td>{{obj.get_status_display}}</td>
+                <td>
+                    <a class="btn btn-primary btn-sm" href="/tel/{{obj.id}}/edit/">编辑</a>
+                    <a class="btn btn-danger btn-sm" href="/tel/{{obj.id}}/del/">删除</a>
+                </td>
+            </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div aria-label="Page navigation example" class="d-flex">
+        <ul class="pagination mt-2 me-auto">
+            {{ page_str }}
+        </ul>
+        <ul class="pagination mt-2">
+            {{ goto_page_str }}
+        </ul>
+    </div>
+
+</div>
+
+{% endblock %}

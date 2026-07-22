@@ -1,0 +1,19 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="card m-auto" style="width: 80rem">
+    <div class="card-header align-items-centerr">
+        编辑靓号
+    </div>
+    <div class="card-body">
+        <form method="post" novalidate>
+            {% csrf_token %}
+            {% for field in forms %}
+            <div class="form-label">{{field.label}}</div>
+            {{field}}
+            <span style="color: #e22030;font-size: 0.8em">{{field.errors.0}}</span>
+            {% endfor %}
+            <button type="submit" class="btn btn-primary">提交</button>
+        </form>
+    </div>
+</div>
+{% endblock %}

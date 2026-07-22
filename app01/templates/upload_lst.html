@@ -1,0 +1,47 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container container-xxl" style="width: 80rem">
+    <div class="card w-75 m-auto">
+        <div class="card-header">
+            头像
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data">
+                {% csrf_token %}
+                用户名: <input type="text" placeholder="用户名" name="username" required>
+                <input type="file" name="avatar">
+                <button class="btn btn-primary" type="submit">提交</button>
+            </form>
+        </div>
+    </div>
+    <div class="card w-75 m-auto mt-2">
+        <div class="card-header">
+            批量上传
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" action="/upload/multi/">
+                {% csrf_token %}
+                <input type="file" name="excel">
+                <input type="submit" class="btn btn-primary" value="上传">
+            </form>
+        </div>
+    </div>
+    <div class="card w-75 m-auto mt-2">
+        <div class="card-header">
+            {{ title }}
+        </div>
+        <div class="card-body">
+            <form method="post" enctype="multipart/form-data" action="/upload/form/">
+                {% csrf_token %}
+                {% for field in form %}
+                <label>{{field.label}}</label>
+                {{field}}
+                <div style="color: #e22030;font-size: 0.8em">{{field.errors.0}}</div>
+                {% endfor %}
+                <input type="submit" class="btn btn-primary" value="上传">
+
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

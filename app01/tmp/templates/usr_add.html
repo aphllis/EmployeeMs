@@ -1,0 +1,84 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block css %}
+<!--<link rel="stylesheet" href="{% static 'plugins/bootstrap-datetimepicker-master/css/bootstrap-datetimepicker.css'%}">-->
+<link rel="stylesheet" href="{% static 'plugins/datetimepicker-master/build/jquery.datetimepicker.min.css'%}">
+{% endblock %}
+
+{% block content %}
+<div class="card m-auto" style="width: 80rem">
+    <div class="card-header align-items-centerr">
+        添加用户
+    </div>
+    <div class="card-body">
+        <form method="post">
+            {% csrf_token %}
+            <div class="mb-3">
+                <label for="name" class="form-label">姓名</label>
+                <input class="form-control" id="name" name="usr">
+            </div>
+            <div class="mb-3">
+                <label for="gender" class="form-label">性别</label>
+                <select class="form-select" id="gender" name="gender">
+                    {% for item in gender_choices %}
+                    <option value="{{item.0}}">{{item.1}}</option>
+                    {% endfor %}
+
+                </select>
+
+            </div>
+            <div class="mb-3">
+                <label for="age" class="form-label">年龄</label>
+                <input class="form-control" id="age" name="age">
+            </div>
+
+            <div class="mb-3">
+                <label for="inputPassword" class="form-label">密码</label>
+                <input type="password" id="inputPassword" class="form-control" aria-describedby="passwordHelpBlock"
+                       name="pwd">
+            </div>
+
+            <div class="mb-3">
+                <label for="account" class="form-label">余额</label>
+                <input class="form-control" id="account" name="account">
+            </div>
+            <div class="mb-3">
+                <label for="basic-picker" class="form-label">入职时间</label>
+                <input class="form-control " id="basic-picker" name="entrytime">
+            </div>
+            <div class="mb-3">
+                <label for="department" class="form-label ">所属部门</label>
+                <select class="form-select" id="department" name="depart">
+                    {% for item in depart_info %}
+                    <option value="{{item.id}}">{{item.title}}</option>
+                    {% endfor %}
+                </select>
+
+            </div>
+            <button type="submit" class="btn btn-primary">提交</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+{% block js %}
+<script src="{% static 'js/jquery-4.0.0.js'%}"></script>
+<!--<script src="{% static 'plugins/bootstrap-datetimepicker-master/js/bootstrap-datetimepicker.js'%}"></script>-->
+<script src="{% static 'plugins/datetimepicker-master/build/jquery.datetimepicker.full.js'%}"></script>
+<script type="text/javascript">
+    $(function () {
+        $("#basic-picker").datetimepicker({
+            timepicker: false,
+            format: "Y-m-d",
+            lang: "zh"
+        })
+    })
+    // $(function () {
+    //     $("#basic-picker").datetimepicker({
+    //         format: "yyyy-mm-dd",
+    //         autoclose: true,
+    //         minView: 2,
+    //         todayHighlight: true,
+    //     })
+    // })
+</script>
+{% endblock%}
