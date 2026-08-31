@@ -9,6 +9,7 @@ local_settings.py
 db.sqlite3
 media/
 staticfiles/
+tmp/
 
 # 虚拟环境
 venv/
@@ -243,4 +244,5 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.tomal
+
 
