@@ -1,4 +1,5 @@
 from django.utils.deprecation import MiddlewareMixin
+from django.http import JsonResponse
 from django.shortcuts import redirect
 
 # class M1(MiddlewareMixin):
@@ -26,6 +27,8 @@ class AuthMiddleware(MiddlewareMixin):
         if info_dict:
             return
 
+        if request.path_info.startswith('/api/'):
+            return JsonResponse({'error': '请先登录'}, status=401)
+
         # 2.如果没有，info为None,则回到登录页面
         return redirect('/login/')
-

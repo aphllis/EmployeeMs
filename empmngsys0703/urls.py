@@ -19,9 +19,16 @@ from django.urls import path,re_path
 from django.views.static import serve
 
 from app01.views import depart, tel, usr,admin,login,task,order,chart,upload
+from app01.api import department_api, employee_api
 from django.conf import settings
 
 urlpatterns = [
+    # REST API
+    path('api/v1/departments/', department_api),
+    path('api/v1/departments/<int:department_id>/', department_api),
+    path('api/v1/employees/', employee_api),
+    path('api/v1/employees/<int:employee_id>/', employee_api),
+
     re_path(r'^media/(?P<path>.*)$',serve,{'document_root':settings.MEDIA_ROOT},name='media'),
     # path('admin/', admin.site.urls),
     # 部门管理
