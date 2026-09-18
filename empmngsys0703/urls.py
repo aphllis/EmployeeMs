@@ -28,7 +28,7 @@ from app01.api import department_api, employee_api
 
 router=DefaultRouter()
 router.register(r"employees",EmployeeViewSet)
-router.register(r"department",DepartmentViewSet)
+router.register(r"departments",DepartmentViewSet)
 urlpatterns = [
     # REST API
     path("api/v1/departments/", department_api),

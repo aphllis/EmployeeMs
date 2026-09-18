@@ -16,6 +16,9 @@ from django.shortcuts import redirect
 
 class AuthMiddleware(MiddlewareMixin):
     def process_request(self,request):
+        # DRF认证被Authmiddleware放过，让后面的Authentication和permission去认证
+        if request.path_info.startswith('/api/v2/'):
+            return
         # 0.排除那些不需要登录就能访问的页面 譬如‘/login/',这一步没有就会无限重定向
         # request.path_info 获取当前用户请求的url
         if request.path_info in ['/login/','/img/code/']:
