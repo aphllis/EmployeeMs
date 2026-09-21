@@ -12,7 +12,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     API endpoint that allows users to be viewed or edited.
     """
 
-    queryset = models.Employee.objects.all()
+    queryset = models.Employee.objects.all().order_by("id")
     serializer_class = EmployeeSerializer
     authentication_classes=[AdminSessionAuthentication]
     permission_classes=[IsAdmin]
@@ -23,7 +23,7 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     API endpoint that allows users to be viewed or edited.
     """
 
-    queryset = models.Department.objects.all()
+    queryset = models.Department.objects.all().order_by("id")
     serializer_class = DepartmentSerializer
     authentication_classes=[AdminSessionAuthentication]
     permission_classes=[IsAdmin]
