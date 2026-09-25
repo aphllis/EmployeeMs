@@ -8,19 +8,24 @@ from app01.utils.form import UserModelForm, TelModelForm
 
 def usr_lst(req):
     queryset = models.Employee.objects.all()
+    form=UserModelForm()
+    if not queryset:return render(req,"usr_lst.html",{"form":form})
     """ 用户管理"""
     # #python语法中获取值：
     # #obj.get_gender_display() 直接在models中创建性别时的元组里面匹配性别按照中文显示
     # #原表中的外键depart_id，如果不加上_id 直接obj.depart，django会直接去关联的表中获取对象,然后可以获取对应的中文名
     # for obj in querySet:
     #     print(obj.name,obj.entrytime,obj.get_gender_display(),obj.depart.title)
-    page_object = Pagination(request=req, queryset=queryset)
-    context = {
-        'queryset': page_object.page_queryset,
-        'page_str': page_object.html()[0],
-        'goto_page_str': page_object.html()[1],
-    }
-    return render(req, 'usr_lst.html', context)
+    if queryset:
+        print("hello")
+        page_object = Pagination(request=req, queryset=queryset)
+        context = {
+            'queryset': page_object.page_queryset,
+            'page_str': page_object.html()[0],
+            'goto_page_str': page_object.html()[1],
+        }
+        return render(req, 'usr_lst.html', context)
+
 
 
 # def usr_add(req):

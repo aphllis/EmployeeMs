@@ -1,8 +1,8 @@
-from tkinter.constants import CASCADE
+# from tkinter.constants import CASCADE
 
 from django.db import models
-from django.db.models import SET_NULL
-from django.contrib.auth.models import AbstractUser
+# from django.db.models import SET_NULL
+# from django.contrib.auth.models import AbstractUser
 
 
 # Create your models here.

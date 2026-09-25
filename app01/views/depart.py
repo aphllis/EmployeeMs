@@ -17,6 +17,7 @@ def depart_lst(req):
     # queryset是对象列表[对象，对象，对象]
     print(req.user)
     queryset = models.Department.objects.all()
+    if not queryset:return render(req,"depart_lst.html")
     page_object = Pagination(request=req, queryset=queryset)
     context = {
         'queryset': page_object.page_queryset,
