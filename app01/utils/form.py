@@ -6,7 +6,7 @@ from django.core.validators import RegexValidator
 from django.views.generic import detail
 
 from app01 import models
-from app01.utils.bootstrap import BootstrapModelForm
+from app01.utils.bootstrap import BootstrapModelForm,BootstrapForm
 from app01.utils.encrypt import md5
 
 
@@ -155,4 +155,20 @@ class TaskModelForm(BootstrapModelForm):
         widgets={
             'detail':forms.TextInput,
         }
+
+
+class LoginForm(BootstrapForm):
+    username = forms.CharField(label="用户名", widget=forms.TextInput(attrs={"autocomplete": "off"}))
+    password = forms.CharField(
+        label="密码", widget=forms.PasswordInput(render_value=True), required=True
+    )
+    code = forms.CharField(
+        label="验证码",
+        widget=forms.TextInput(attrs={"autocomplete": "off"}),
+        required=True,
+    )
+
+    def clean_password(self):
+        pwd = md5(self.cleaned_data["password"])
+        return pwd
 
