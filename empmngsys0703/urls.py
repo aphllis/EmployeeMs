@@ -30,7 +30,7 @@ router=DefaultRouter()
 router.register(r"employees",EmployeeViewSet)
 router.register(r"departments",DepartmentViewSet)
 urlpatterns = [
-    # REST API
+    # RESTFUL API django原生实现
     path("api/v1/departments/", department_api),
     path("api/v1/departments/<int:department_id>/", department_api),
     path("api/v1/employees/", employee_api),
@@ -41,7 +41,7 @@ urlpatterns = [
         {"document_root": settings.MEDIA_ROOT},
         name="media",
     ),
-    #DRF API
+    # RESTFUL API DRF实现
     path("api/v2/",include(router.urls)),
     # path('admin/', admin.site.urls),
     # 部门管理
@@ -65,9 +65,11 @@ urlpatterns = [
     # 管理员
     path("admin/lst/", admin.admin_lst),
     path("admin/add/", admin.admin_add),
-    path("admin/<int:nid>/edit/", admin.admin_edit),
+    path("admin/<int:nid>/status/", admin.admin_status),
     path("admin/<int:nid>/del/", admin.admin_del),
     path("admin/<int:nid>/reset/", admin.admin_reset),
+    path("admin/<int:nid>/role/", admin.admin_role),
+
     # 登录
     path("login/", login.login_ds),
     path("logout/", login.logout_ds),

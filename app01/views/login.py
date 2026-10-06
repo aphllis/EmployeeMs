@@ -1,33 +1,15 @@
 # from urllib import request
 
 from django.shortcuts import render, HttpResponse, redirect
+from django.contrib.auth.hashers import check_password,make_password
 # from django import forms
 from io import BytesIO
 from app01 import models
 # from app01.utils.bootstrap import BootstrapForm
 from app01.utils.form import LoginForm
-# from app01.utils.encrypt import md5
+from app01.utils.encrypt import md5
 from app01.utils.code import check_code
 from app01.utils.redis_client import client
-
-
-# class LoginForm(forms.Form):
-#     username=forms.CharField(label='用户名',widget=forms.TextInput(attrs={'class':'form-control'}))
-#     password=forms.CharField(label='密码',widget=forms.PasswordInput(attrs={'class':'form-control'}))
-#     #或者如下
-#     def __init__(self,*args,**kwargs):
-#         super().__init__(*args,**kwargs)
-#         for name,field in self.fields.items():
-#             if field.widget.attrs:
-#                 field.widget.attrs['class']='form-control'
-#                 field.widget.attrs['placeholder']=field.label
-#             else:
-#                 field.widget.attrs={
-#                     'class':'form-control',
-#                     'placeholder':field.label
-#                 }
-
-
 
 def login_ds(req):
     if req.method == "GET":
@@ -35,33 +17,70 @@ def login_ds(req):
         return render(req, "login.html", {"form": form})
     form = LoginForm(data=req.POST)
     if form.is_valid():
-        print(form.cleaned_data)
-        # filter中的条件，是cleaned_data字典，要求键名与数据库orm中的field名字一致
+        # 获取登录表单数据
+        username=form.cleaned_data['username']
+        raw_password=form.cleaned_data['password']
 
         # 图片验证码校验
-        user_input_code = form.cleaned_data.pop("code", None)
-        print(user_input_code)
-        # code=req.session.get('img_code','')
-        ##### redis获取图片验证码 #####
+        user_input_code=form.cleaned_data.pop('code',None)
+
         redis_key = f"captcha:{req.session.session_key}"
         code = client.get(redis_key)
+
         if not code or code.upper() != user_input_code.upper():
             form.add_error("code", "验证码错误")
             return render(req, "login.html", {"form": form})
         # 图片验证码校验成功后，删除redis里面的验证码
         client.delete(redis_key)
 
-        admin_obj = models.Admin.objects.filter(**form.cleaned_data).first()
+        #先根据用户名查询数据库数据是否存在
+        admin_obj=models.Admin.objects.filter(username=username).first()
         if not admin_obj:
             # 主动添加错误信息
             form.add_error("password", "用户名或密码错误")
             return render(req, "login.html", {"form": form})
+        
+        #然后验证登录密码
 
+        stored_password=admin_obj.password
+        is_legacy_md5=(
+            len(stored_password)==32 and all(c in "0123456789abcdefABCDEF" for c in stored_password)
+        )
+
+        if is_legacy_md5:
+            #旧账号：MD5验证
+            password_valid=(
+                md5(raw_password).lower() == stored_password.lower()
+            )
+            if password_valid:
+                #登录成功，立即升级密码
+                admin_obj.password=make_password(raw_password)
+                admin_obj.save(update_fields=["password"])
+
+                print("管理员密码已从 MD5 升级为 Django Password Hash")
+        else:
+            # 新账号：Django hash认证
+            password_valid=check_password(raw_password,stored_password)
+
+        # 密码校验失败
+        if not password_valid:
+            # 主动添加错误信息
+            form.add_error("password", "用户名或密码错误")
+            return render(req, "login.html", {"form": form})
+        
+        # 账号状态检查
+        if not admin_obj.is_active:
+            form.add_error("password","该管理员账号已被禁用")     
+            return render(req,"login.html",{"form":form})
+
+        # 密码校验成功：
         # 用户名和密码正确
         # 网站服务器生成随机字符串，写入浏览器的cookie中，再写入session中
         # django数据库中有django_session存储session键,django默认储存session信息到数据库中
         req.session["info"] = {"id": admin_obj.pk, "username": admin_obj.username}
-        print(req.session["info"])
+        # print(req.session["info"])
+        # print("session_key=",req.session.session_key)
+        # print("session_info=",req.session["info"])
 
         # 重新设置session的到期时间，否则session中的info信息会在60s过期
         # 现在设置7天免登录
@@ -102,8 +121,8 @@ def img_code(req):
     # 保存验证码，60s后自动过期
     client.set(redis_key, code_str, ex=60)
 
-    print("验证码=", code_str)
-    print("redis_key=", redis_key)
+    # print("验证码=", code_str)
+    # print("redis_key=", redis_key)
 
     # 将图片验证码写入内存
     stream = BytesIO()

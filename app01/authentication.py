@@ -15,7 +15,11 @@ class AdminSessionAuthentication(BaseAuthentication):
             admin_obj=models.Admin.objects.get(id=admin_id)
         except models.Admin.DoesNotExist:
             raise AuthenticationFailed("管理员账号不存在")
-        #DRF 在viewset中会拿到这个返回值，并且令request.user = admin_obj
+
+        if not admin_obj.is_active:
+            raise AuthenticationFailed("管理员账号已被禁用")
+        #DRF 在viewset中会拿到这个返回值
+        # 并且令request.user = admin_obj
         # request.auth = None
         return (admin_obj,None)
     

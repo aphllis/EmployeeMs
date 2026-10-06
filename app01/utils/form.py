@@ -1,18 +1,12 @@
-from tabnanny import verbose
-
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.views.generic import detail
+from django.contrib.auth.hashers import check_password,make_password
+from django.contrib.auth.models import Group
 
 from app01 import models
 from app01.utils.bootstrap import BootstrapModelForm,BootstrapForm
-from app01.utils.encrypt import md5
-
-
 # 引入正则校验
-
-
 class DepartModelForm(BootstrapModelForm):
     title = forms.CharField(label='部门名')
 
@@ -83,41 +77,88 @@ class AdminModelForm(BootstrapModelForm):
     confirm_password = forms.CharField(label='确认密码',
                                        widget=forms.PasswordInput(
                                            render_value=True))  # 加入参数render_value=True，能够在密码校验前后不一致情况下不清空密码
-
+    is_active=forms.TypedChoiceField(
+        label='是否启用',
+        choices=(
+            (True,'是'),
+            (False,'否'),
+        ),
+        coerce=lambda value:value == 'True',
+        widget=forms.RadioSelect
+    )
     class Meta:
         model = models.Admin
-        fields = ['username', 'password', 'confirm_password']
+        fields = ['username', 'password', 'confirm_password','is_active']
         widgets = {
             'password': forms.PasswordInput
         }
-
-    # 钩子函数的调用执行顺序按照fields中的字段顺序而不是函数上下顺序，所以需要先对password执行加密，然后对confirm_password加密与前面的密文比较
+    # md5加密方式替换为django的hashers中的加密模式
+    # 钩子函数的调用执行顺序按照fields中的字段顺序而不是函数上下顺序
     def clean_password(self):
-        return md5(self.cleaned_data.get('password'))
+        # return md5(self.cleaned_data.get('password'))
+        password=self.cleaned_data.get('password')
+        if not password:
+            raise ValidationError('密码不能为空')
+        return password
 
-    # 定义钩子方式校验密码和确认密码的值是否一致
-    # def clean_confirm_password(self):
-    #     print(self.cleaned_data)
-    #     pwd = self.cleaned_data.get('password')
-    #     confirm_pwd = self.cleaned_data.get('confirm_password')
-    #     if pwd != confirm_pwd:
-    #         raise ValidationError('密码不一致')
-    #     return confirm_pwd
-
-    # 定义钩子方式校验加密后的 密码和确认密码的值是否一致
+    
     def clean_confirm_password(self):
-        print(self.cleaned_data)
-        pwd = self.cleaned_data.get('password')
-        confirm_pwd = md5(self.cleaned_data.get('confirm_password'))
-        if pwd != confirm_pwd:
+        # 定义钩子方式校验加密后的 密码和确认密码的值是否一致
+        # pwd = self.cleaned_data.get('password')
+        # confirm_pwd = md5(self.cleaned_data.get('confirm_password'))
+        # if pwd != confirm_pwd:
+        #     raise ValidationError('密码不一致')
+        # return confirm_pwd
+        password=self.cleaned_data.get('password')
+        confirm_password=self.cleaned_data.get('confirm_password')
+        if password!=confirm_password:
             raise ValidationError('密码不一致')
-        return confirm_pwd
+        return confirm_password
+
+    def save(self,commit=True):
+        obj=super().save(commit=False)
+        obj.password=make_password(
+            self.cleaned_data['password']
+        )
+        if commit:
+            obj.save()
+        return obj
 
 
-class AdminEditModelForm(BootstrapModelForm):
+class AdminRoleForm(forms.ModelForm):
+    groups = forms.ModelMultipleChoiceField(
+        label='角色',
+        queryset=Group.objects.all(),
+        widget=forms.CheckboxSelectMultiple
+    )
     class Meta:
-        model = models.Admin
-        fields = ['username']
+        model=models.Admin
+        fields=['groups']
+    # 控制SuperAdmin至少保留一个
+    def clean_groups(self):
+        groups=self.cleaned_data.get('groups')
+        if groups is None:
+            return groups
+        is_superadmin=groups.filter(name='SuperAdmin').exists()
+        if not is_superadmin:
+            other_superadmin_count=models.Admin.objects.filter(
+                groups__name='SuperAdmin'
+            ).exclude(
+                id=self.instance.pk
+            ).count()
+            if other_superadmin_count==0:
+                raise ValidationError(
+                    '系统至少需要保留一个SuperAdmin'
+                )
+        return groups
+    # 权限控制接入view层，作为装饰器控制
+    # 根据权限动态显示groups字段
+    # def __init__(self, *args,can_manage_roles=False, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     if not can_manage_roles:
+    #         self.fields.pop('groups')
+
+
 
 
 class AdminResetModelForm(BootstrapModelForm):
@@ -125,27 +166,43 @@ class AdminResetModelForm(BootstrapModelForm):
                                        widget=forms.PasswordInput(
                                            render_value=True))
     # 加入参数render_value=True，能够在密码校验前后不一致情况下不清空密码
-    password = forms.CharField(label='新密码', widget=forms.PasswordInput, max_length=32)
+    password = forms.CharField(label='新密码', widget=forms.PasswordInput, max_length=128)
 
     class Meta:
         model = models.Admin
         fields = ['password', 'confirm_password']
 
     def clean_password(self):
-        md5_pwd = md5(self.cleaned_data.get('password'))
-        # 根据instance中的id值和新输入密码的md5密文为条件在数据库中搜索，如果存在则表明新密码和旧密码相同，则提示错误
-        exist = models.Admin.objects.filter(id=self.instance.pk, password=md5_pwd).exists()
-        if exist:
-            raise ValidationError("不能和旧密码一致")
-        return md5_pwd
+        # md5_pwd = md5(self.cleaned_data.get('password'))
+        # # 根据instance中的id值和新输入密码的md5密文为条件在数据库中搜索，如果存在则表明新密码和旧密码相同，则提示错误
+        # exist = models.Admin.objects.filter(id=self.instance.pk, password=md5_pwd).exists()
+        # if exist:
+        #     raise ValidationError("不能和旧密码一致")
+        # return md5_pwd
+        password=self.cleaned_data.get('password')
+        if not password:
+            raise ValidationError('密码不能为空')
+        return password
 
     def clean_confirm_password(self):
         # print(self.cleaned_data)
-        pwd = self.cleaned_data.get('password')
-        confirm_pwd = md5(self.cleaned_data.get('confirm_password'))
-        if pwd != confirm_pwd:
+        # pwd = self.cleaned_data.get('password')
+        # confirm_pwd = md5(self.cleaned_data.get('confirm_password'))
+        # if pwd != confirm_pwd:
+        #     raise ValidationError('密码不一致')
+        # return confirm_pwd
+        password=self.cleaned_data.get('password')
+        confirm_password=self.cleaned_data.get('confirm_password')
+        if password!=confirm_password:
             raise ValidationError('密码不一致')
-        return confirm_pwd
+        return confirm_password
+    def save(self, commit = True):
+        obj=super().save(commit=False)
+        obj.password=make_password(self.cleaned_data['password'])
+        if commit:
+            obj.save()
+        return obj
+
 
 
 class TaskModelForm(BootstrapModelForm):
@@ -168,7 +225,39 @@ class LoginForm(BootstrapForm):
         required=True,
     )
 
-    def clean_password(self):
-        pwd = md5(self.cleaned_data["password"])
-        return pwd
+    # 取消旧的md5的密码加密模式，后续渐进改成django支持的新的加密模式譬如PBKDF2等
+    # def clean_password(self):
+    #     pwd = md5(self.cleaned_data["password"])
+    #     return pwd
 
+#当前管理员账号修改自己密码
+class AdminChangePasswordForm(forms.Form):
+    old_password=forms.CharField(label="旧密码",widget=forms.PasswordInput)
+
+    new_password=forms.CharField(label="新密码",widget=forms.PasswordInput)
+
+    confirm_password=forms.CharField(label="确认密码",widget=forms.PasswordInput(render_value=True))
+
+    def __init__(self,*args,current_admin=None,**kwargs):
+        super().__init__(*args,**kwargs)
+        self.current_admin=current_admin
+
+    def clean_old_password(self):
+        old_password=self.clean_old_password.get("old_password")
+
+        if not self.current_admin:
+            raise ValidationError("账号不存在")
+
+        if not check_password(old_password,self.current_admin.password):
+            raise ValidationError("旧密码错误")
+
+        return old_password
+
+    def clean_confirm_password(self):
+        new_password=self.cleaned_data.get("new_password")
+        confirm_password=self.cleaned_data.get("confirm_password")
+
+        if new_password !=confirm_password:
+            raise ValidationError("两次密码不一致")
+        return confirm_password
+    

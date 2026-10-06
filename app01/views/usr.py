@@ -17,7 +17,6 @@ def usr_lst(req):
     # for obj in querySet:
     #     print(obj.name,obj.entrytime,obj.get_gender_display(),obj.depart.title)
     if queryset:
-        print("hello")
         page_object = Pagination(request=req, queryset=queryset)
         context = {
             'queryset': page_object.page_queryset,

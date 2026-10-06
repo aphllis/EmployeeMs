@@ -3,10 +3,11 @@
 <div class="container" style="width: 80rem">
     <div class="mb-2 d-flex">
         <div class="me-auto">
+            {% if can_add_admin %}
             <a class="btn btn-success btn-sm" href="/admin/add/" target="_blank">
-
                 <i class="bi bi-plus-circle-fill"></i> 新建管理员
             </a>
+            {% endif %}
         </div>
 
         <!--        搜索区-->
@@ -24,27 +25,59 @@
         <div></div>
         <table class="table table-bordered mb-0 text-center">
             <thead>
-            <tr>
-                <th scope="col">Id</th>
-                <th scope="col">姓名</th>
-                <th scope="col">密码</th>
-                <th scope="col">重置密码</th>
-                <th scope="col">操作</th>
-            </tr>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">用户名</th>
+                    <th scope="col">角色</th>
+                    <th scope="col">状态</th>
+                    <th scope="col">操作</th>
+                </tr>
             </thead>
             <tbody>
-            {% for obj in queryset %}
-            <tr>
-                <th scope="row">{{obj.id}}</th>
-                <td>{{obj.username}}</td>
-                <td>*************</td>
-                <td><a href="/admin/{{obj.id}}/reset/" style="text-decoration: none">重置密码</a></td>
-                <td>
-                    <a class="btn btn-primary btn-sm" href="/admin/{{obj.id}}/edit/">编辑</a>
-                    <a class="btn btn-danger btn-sm" href="/admin/{{obj.id}}/del/">删除</a>
-                </td>
-            </tr>
-            {% endfor %}
+                {% for obj in queryset %}
+                <tr>
+                    <th scope="row">{{obj.id}}</th>
+                    <td>{{obj.username}}</td>
+                    <td>
+                        {% for group in obj.groups.all %}
+                        <span class="badge text-bg-primary">
+                            {{group.name}}
+                        </span>
+                        {% empty %}
+                        <span class="text-muted">未分配角色</span>
+                        {% endfor %}
+                    </td>
+                    <td>
+                        {% if obj.is_active %}
+                        <button type="button" class="btn btn-success btn-sm status-btn" data-id="{{obj.id}}"
+                            data-status="false">启用</button>
+                        <!-- <span class="badge text-bg-success">启用</span> -->
+                        {% else %}
+                        <button type="button" class="btn btn-danger btn-sm status-btn" data-id="{{obj.id}}"
+                            data-status="true">禁用</button>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if obj.can_manage_roles %}
+                        <button type="button" class="btn btn-info btn-sm role-btn" data-id="{{obj.id}}"
+                            data-username="{{obj.username}}" data-roles="{{obj.current_role_ids|join:','}}">角色</button>
+                        {% endif %}
+
+                        {% if can_reset_admin_password %}
+                        <button type="button" class="btn btn-warning btn-sm reset-password-btn" data-id="{{obj.id}}"
+                            data-username="{{obj.username}}">重置</button>
+                        {% endif %}
+
+                        {% if obj.can_delete %}
+                        <a class="btn btn-danger btn-sm" href="/admin/{{obj.id}}/del/">删除</a>
+                        {% else %}
+                        <span data-bs-toggle="tooltip" title="{{ obj.delete_disabled_reason}}">
+                            <button type="button" class="btn btn-danger btn-sm" disabled>删除</button>
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -56,5 +89,224 @@
             {{ goto_page_str }}
         </ul>
     </div>
+    <div class="modal fade" id="resetPasswordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">重置密码 | <span id="reset-username"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">新密码</label>
+                        <input type="password" id="reset-password" class="form-control">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">确认密码</label>
+                        <input type="password" id="reset-confirm-password" class="form-control">
+                    </div>
+                    <div id="reset-error" class="text-danger"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="confirm-reset-password">确认</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="roleModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h6 class="modal-title">角色管理 | <span id="role-username"></span></h6>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="role-list"></div>
+                    <div id="role-error" class="text-danger"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="confirm-role">保存</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
+{{ role_choices|json_script:"role-data" }}
+{% endblock %}
+{% block js %}
+
+<script>
+    /* 获取CSRF-TOKEN*/
+    function getCookie(name) {
+        const cookies = document.cookie.split(";");
+        for (const cookie of cookies) {
+            const [key, value] = cookie.trim().split("=");
+            if (key == name) {
+                return decodeURIComponent(value);
+            }
+        }
+        return null;
+    }
+    /*启用/禁用 管理员 ajax请求*/
+    document.querySelectorAll(".status-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+            const adminId = this.dataset.id;
+            const newStatus = this.dataset.status;
+
+            fetch(`/admin/${adminId}/status/`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-CSRFToken": getCookie("csrftoken"),
+                },
+                body: `is_active=${newStatus}`,
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        alert(data.error || "状态修改失败");
+                        return;
+                    }
+                    location.reload();
+                });
+        });
+    });
+
+
+    /*强制重置密码ajax*/
+    let resetAdminId = null;
+    document.querySelectorAll(".reset-password-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+            resetAdminId = this.dataset.id;
+
+            document.getElementById("reset-username").textContent = this.dataset.username;
+
+            document.getElementById("reset-password").value = "";
+            document.getElementById("reset-confirm-password").value = "";
+            document.getElementById("reset-error").value = "";
+
+            const modal = new bootstrap.Modal(document.getElementById("resetPasswordModal"));
+            modal.show();
+        });
+    });
+
+    //发送ajax请求
+    document.getElementById("confirm-reset-password").addEventListener("click", function () {
+        const password = document.getElementById("reset-password").value;
+
+        const confirmPassword = document.getElementById("reset-confirm-password").value;
+        fetch(`/admin/${resetAdminId}/reset/`, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/x-www-form-urlencoded",
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body:
+                `password=${encodeURIComponent(password)}` +
+                `&confirm_password=${encodeURIComponent(confirmPassword)}`
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    document.getElementById("reset-error").textContent = data.errors || "密码重置失败";
+                    return;
+                }
+                alert("密码重置成功");
+                location.reload();
+            });
+    });
+
+
+    /*角色管理ajax*/
+    const role_choices = JSON.parse(document.getElementById("role-data").textContent)
+
+    let roleAdminId = null;
+    document.querySelectorAll(".role-btn").forEach(function (button) {
+        button.addEventListener("click", function () {
+            // 当前正在修改哪个管理员
+            roleAdminId = this.dataset.id;
+
+            // 当前管理员用户名
+            const username = this.dataset.username;
+
+            // 当前管理员已有的角色 ID
+            const currentRoleIds = this.dataset.roles ? this.dataset.roles.split(",") : [];
+
+            // 显示用户名
+            document.getElementById("role-username").textContent = username;
+
+            // 获取角色容器
+            const roleList = document.getElementById("role-list");
+
+            // 清空上一次打开 Modal 时生成的角色
+            roleList.innerHTML = "";
+
+            // 根据后端传来的角色数据生成复选框
+            role_choices.forEach(function (group) {
+                roleList.innerHTML += `
+                <div class="form-check">
+                <input type="checkbox" class="form-check-input role-checkbox" value="${group.id}" id="role-${group.id}">
+                <label for="role-${group.id}" class="form-check-label">${group.name}</label>
+                </div>
+                `;
+            });
+
+            // 根据当前管理员已有的角色，自动勾选
+            currentRoleIds.forEach(function (roleId) {
+                const checkbox = document.getElementById(`role-${roleId}`);
+                if (checkbox) {
+                    checkbox.checked = true;
+                }
+            });
+
+            // 清空错误信息
+            document.getElementById("role-error").textContent = "";
+
+            // 创建并打开 Modal
+            const modal = new bootstrap.Modal(document.getElementById("roleModal"));
+            modal.show();
+        });
+    });
+
+    /*保存角色，发送ajax请求*/
+    document.getElementById("confirm-role").addEventListener("click", function () {
+        //创建空的表单数据包之后可以把它交给 fetch() 发送给后端，FormData是浏览器 JavaScript 自带的 Web API
+        const formData = new FormData();
+
+        document.querySelectorAll(".role-checkbox:checked")
+            .forEach(function (checkbox) {
+                formData.append(
+                    "groups",
+                    checkbox.value
+                );
+            });
+        console.log("选中的checkbox：");
+        console.log(document.querySelectorAll(".role-checkbox:checked"));
+
+        console.log("FormData：");
+        for (const [key, value] of formData.entries()) {
+            console.log(key, value);
+        }
+        // ajax Post
+        fetch(`/admin/${roleAdminId}/role/`, {
+            method: "POST",
+            headers: {
+                "X-CSRFToken": getCookie("csrftoken")
+            },
+            body: formData
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (!data.success) {
+                    document.getElementById("role-error").textContent = data.errors || data.error || "角色修改失败";
+                    return;
+                }
+                // alert("角色修改成功");
+                location.reload();
+            })
+    })
+</script>
 {% endblock %}

@@ -2,7 +2,7 @@ from django import forms
 
 
 class Bootstrap:
-    bootstrap_exclude_fields = []
+    bootstrap_exclude_fields = ['groups','is_active']
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # 插件添加样式的循环写法(利用django的forms源码)
