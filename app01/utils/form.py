@@ -260,4 +260,9 @@ class AdminChangePasswordForm(forms.Form):
         if new_password !=confirm_password:
             raise ValidationError("两次密码不一致")
         return confirm_password
+
+class ProfileInfoForm(BootstrapModelForm):
+    class Meta:
+        model=models.ProfileInfo
+        fields=["nickname","signature"]
     

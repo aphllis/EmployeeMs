@@ -1,0 +1,73 @@
+{% extends 'layout.html' %}
+{% load static %}
+{% block content %}
+<div class="container" style="width: 60rem;">
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-person-circle"></i>
+            个人中心
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-3 text-center">
+                    {% if profile_info.avatar %}
+                    <img src="{{ profile_info.avatar}}" 
+                    alt="个人头像"
+                    class="rounded-circle"
+                    style="width: 120px;height: 120px;object-fit: cover;"
+                    >
+                    {% else %}
+                    <i class="bi bi-person-circle"></i>
+                    {% endif %}
+                </div>
+                <div class="col-md-9">
+                    <form method="post">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">昵称</label>
+                            {{ form.nickname }}
+                            {% for error in form.nickname.errors %}
+                            <div class="text-danger">
+                                {{error}}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">账号名</label>
+                            <input type="text" class="form-control" value="{{current_admin.username}}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">所属部门</label>
+                            <input type="text" class="form-control" value="{{profile_info.department.title|default:'未分配'}}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">职位</label>
+                            <input type="text" class="form-control" value="{{profile_info.position|default:'未设置'}}" disabled>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">个性签名</label>
+                            {{ form.signature }}
+                            {% for error in form.signature.errors %}
+                            <div class="text-danger">
+                                {{ error }}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <button type="submit" class="btn btn-primary">保存修改</button>
+                    </form>
+                </div>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between align-items-centerr">
+                <div>
+                    <h6 class="mb-1">账号安全</h6>
+                    <span class="text-muted">
+                        定期修改密码可以提高账号安全
+                    </span>
+                </div>
+                <a href="/profile/password/" class="btn btn-outline-primary">修改密码</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock%}
