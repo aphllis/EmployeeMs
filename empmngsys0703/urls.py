@@ -23,7 +23,7 @@ from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from app01.views.api_views import EmployeeViewSet,DepartmentViewSet
 
-from app01.views import depart, tel, usr, admin, login, task, order, chart, upload
+from app01.views import depart, tel, usr, admin, login, task, order, chart, upload,profile
 from app01.api import department_api, employee_api
 
 router=DefaultRouter()
@@ -95,5 +95,8 @@ urlpatterns = [
     path("upload/lst/", upload.upload_lst),
     path("upload/multi/", upload.upload_multi),
     path("upload/form/", upload.upload_form),
+
+    #个人中心
+    path("profile/",profile.profile)
     
 ]

@@ -243,7 +243,7 @@ class AdminChangePasswordForm(forms.Form):
         self.current_admin=current_admin
 
     def clean_old_password(self):
-        old_password=self.clean_old_password.get("old_password")
+        old_password=self.cleaned_data.get("old_password")
 
         if not self.current_admin:
             raise ValidationError("账号不存在")

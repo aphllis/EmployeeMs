@@ -123,13 +123,47 @@ class Order(models.Model):
 
 
 class ProfileInfo(models.Model):
+    admin = models.OneToOneField(
+        "Admin",
+        on_delete=models.CASCADE,
+        related_name="profile_info",
+        verbose_name="管理员",
+        null=True,
+        blank=True
+        )
+    nickname = models.CharField(
+        verbose_name='昵称', 
+        max_length=32, 
+        unique=True
+        )
+    signature=models.CharField(
+        verbose_name="个性签名",
+        max_length=128,blank=True
+        )
+
+    #多对一外键
+    department=models.ForeignKey(
+        "Department",
+        on_delete=models.SET_NULL,
+        #数据库层面允许为空
+        null=True,
+        #表单验证层面允许为空
+        blank=True,
+        #方向关系访问
+        related_name="profiles",
+        verbose_name="所属部门"
+    )
+    position=models.CharField(
+        verbose_name="职位",
+        max_length=32,
+        blank=True
+    )
+    avatar=models.CharField(verbose_name='头像',max_length=128,blank=True)
     
-    nickname = models.CharField(verbose_name='昵称', max_length=32, unique=True)
-    age = models.IntegerField(verbose_name='年龄')
+    age = models.IntegerField(verbose_name='年龄',null=True,blank=True)
     gender_choices = (
         (1, '男'),
         (2, '女')
     )
-    gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
-    email = models.CharField(verbose_name='邮箱',max_length=64)
-    avatar=models.CharField(verbose_name='头像',max_length=128)
+    gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices,null=True,blank=True)
+    email = models.CharField(verbose_name='邮箱',max_length=64,null=True,blank=True)
