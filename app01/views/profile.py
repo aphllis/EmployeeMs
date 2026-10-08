@@ -48,10 +48,10 @@ def change_password(req):
         return JsonResponse({"success":False,"error":"账号不存在"},status=403)
     form=AdminChangePasswordForm(data=req.POST,current_admin=current_admin)
     if form.is_valid():
-        current_admin.password=form.cleaned_data["new_password"]
-        current_admin.save(update_fields="password")
+        current_admin.password=make_password(form.cleaned_data["new_password"])
+        current_admin.save(update_fields=["password"])
         return JsonResponse({"success":True})
-    errors=[]
+    errors=[] 
     for field_errors in form.errors.values():
         errors.extend(field_errors)
     return JsonResponse({"success":False,"errors":";".join(errors)},status=400)
