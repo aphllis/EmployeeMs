@@ -1,7 +1,7 @@
 from django.shortcuts import render,redirect
-
+from django.contrib.auth.hashers import make_password
 from app01.utils.permission import get_current_admin
-from app01.utils.form import ProfileInfoForm
+from app01.utils.form import ProfileInfoForm,AdminChangePasswordForm
 def profile(req):
     current_admin=get_current_admin(req)
     profile_info=current_admin.profile_info
@@ -19,3 +19,17 @@ def profile(req):
         "form":form
     }
     return render(req,"profile.html",content)
+
+def change_password(req):
+    current_admin=get_current_admin(req)
+    if req.method=="GET":
+        form=AdminChangePasswordForm()
+    else:
+        form=AdminChangePasswordForm(data=req.POST,current_admin=current_admin)
+        if form.is_valid():
+            #此句表示修改python进程中内存中的对象，但是数据库还是旧的，没有更新
+            current_admin.password=make_password(form.cleaned_data["new_password"])
+            #此句表示将当前内存中的对象状态保存到数据库
+            current_admin.save(update_fields=["password"])
+            return redirect("/profile/")
+    return render(req,"profile_password.html",{"form":form})

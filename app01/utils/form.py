@@ -231,7 +231,7 @@ class LoginForm(BootstrapForm):
     #     return pwd
 
 #当前管理员账号修改自己密码
-class AdminChangePasswordForm(forms.Form):
+class AdminChangePasswordForm(BootstrapForm):
     old_password=forms.CharField(label="旧密码",widget=forms.PasswordInput)
 
     new_password=forms.CharField(label="新密码",widget=forms.PasswordInput)

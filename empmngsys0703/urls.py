@@ -97,6 +97,7 @@ urlpatterns = [
     path("upload/form/", upload.upload_form),
 
     #个人中心
-    path("profile/",profile.profile)
+    path("profile/",profile.profile),
+    path("profile/password",profile.change_password)
     
 ]
