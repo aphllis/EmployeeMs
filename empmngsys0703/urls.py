@@ -98,6 +98,6 @@ urlpatterns = [
 
     #个人中心
     path("profile/",profile.profile),
-    path("profile/password",profile.change_password)
+    path("profile/password/",profile.change_password)
     
 ]

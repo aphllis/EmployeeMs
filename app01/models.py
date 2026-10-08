@@ -149,7 +149,7 @@ class ProfileInfo(models.Model):
         null=True,
         #表单验证层面允许为空
         blank=True,
-        #方向关系访问
+        #反向关系访问
         related_name="profiles",
         verbose_name="所属部门"
     )

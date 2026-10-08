@@ -11,11 +11,8 @@
             <div class="row">
                 <div class="col-md-3 text-center">
                     {% if profile_info.avatar %}
-                    <img src="{{ profile_info.avatar}}" 
-                    alt="个人头像"
-                    class="rounded-circle"
-                    style="width: 120px;height: 120px;object-fit: cover;"
-                    >
+                    <img src="{{ profile_info.avatar}}" alt="个人头像" class="rounded-circle"
+                        style="width: 120px;height: 120px;object-fit: cover;">
                     {% else %}
                     <i class="bi bi-person-circle"></i>
                     {% endif %}
@@ -38,11 +35,13 @@
                         </div>
                         <div class="mb-3">
                             <label class="form-label">所属部门</label>
-                            <input type="text" class="form-control" value="{{profile_info.department.title|default:'未分配'}}" disabled>
+                            <input type="text" class="form-control"
+                                value="{{profile_info.department.title|default:'未分配'}}" disabled>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">职位</label>
-                            <input type="text" class="form-control" value="{{profile_info.position|default:'未设置'}}" disabled>
+                            <input type="text" class="form-control" value="{{profile_info.position|default:'未设置'}}"
+                                disabled>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">个性签名</label>
@@ -65,9 +64,82 @@
                         定期修改密码可以提高账号安全
                     </span>
                 </div>
-                <a href="/profile/password/" class="btn btn-outline-primary">修改密码</a>
+                <!-- <a href="/profile/password/" class="btn btn-outline-primary">修改密码</a> -->
+                <button type="button" class="btn btn-outline-primary" id="open-password-modal">修改密码</button>
+
+            </div>
+        </div>
+    </div>
+    <div class="modal fade" id="passwordModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">修改密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="password-form">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">旧密码</label>
+                            {{ password_form.old_password }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">新密码</label>
+                            {{ password_form.new_password }}
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">确认密码</label>
+                            {{ password_form.confirm_password }}
+                        </div>
+                        <div id="password-error" class="text-danger"></div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary " id="confirm-password">确认</button>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">取消</button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 {% endblock%}
+{% block js %}
+<script>
+    document.getElementById("open-password-modal")
+        .addEventListener("click", function () {
+            document.getElementById("password-form").reset();
+            document.getElementById("password-error").textContent = "";
+
+            const modal = new bootstrap.Modal(
+                document.getElementById("passwordModal")
+            );
+            modal.show();
+        });
+
+    //发送ajax
+    document.getElementById("confirm-password")
+        .addEventListener("click", function () {
+            const form = document.getElementById("password-form");
+            const formData=new FormData(form);
+
+            fetch("/profile/password/",{
+                method:"POST",
+                body:formData
+            })
+            .then(response =>response.json())
+            .then(data =>{
+                if (!data.success){
+                    document.getElementById("password-error")
+                    .textContent=data.errors||data.error||"密码修改失败";
+                    return ;
+                }
+                alert("密码修改成功");
+                const modalElement=document.getElementById("passwordModal");
+                const modal=bootstrap.Modal.getInstance(modalElement);
+                modal.hide();
+                form.reset();
+            });
+        });
+</script>
+{% endblock %}
