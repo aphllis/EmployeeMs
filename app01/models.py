@@ -263,7 +263,8 @@ class Account(models.Model):
         verbose_name="关联员工",
     )
 
-    create_at=models.DateTimeField(auto_now_add=True)
+    is_active=models.BooleanField(verbose_name="是否启用",default=True)
+    created_at=models.DateTimeField(auto_now_add=True)
 
     updated_at=models.DateTimeField(auto_now=True)
 
