@@ -79,8 +79,9 @@ class Employee(models.Model):
     )
     password = models.CharField(verbose_name="旧密码字段", max_length=128)
     age = models.IntegerField(verbose_name="年龄", null=True, blank=True)
-    account = models.DecimalField(
-        verbose_name="账户余额", max_digits=10, decimal_places=2, default=0
+    gender_choices = ((1, "男"), (2, "女"))
+    gender = models.SmallIntegerField(
+        verbose_name="性别", choices=gender_choices, null=True, blank=True
     )
     entry_date = models.DateField(verbose_name="入职时间", null=True, blank=True)
 
@@ -109,10 +110,7 @@ class Employee(models.Model):
         related_name="employees",
     )
     # django的约束
-    gender_choices = ((1, "男"), (2, "女"))
-    gender = models.SmallIntegerField(
-        verbose_name="性别", choices=gender_choices, null=True, blank=True
-    )
+
 
 
 class Telenumber(models.Model):

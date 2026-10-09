@@ -32,7 +32,6 @@ def test_admin_can_create_employee():
             "name": "测试员工",
             "password": "123456",
             "age": 30,
-            "account": "1000.00",
             "entry_date": "2026-09-21",
             "department": department.id,
             "gender": 1,
@@ -48,7 +47,6 @@ def test_admin_can_create_employee():
     employee = models.Employee.objects.get(name="测试员工")
 
     assert employee.age == 30
-    assert employee.account == 1000
     assert employee.department_id == department.id
     assert employee.gender == 1
 
@@ -69,7 +67,6 @@ def test_admin_can_get_employee_list():
         name="张三",
         password="123456",
         age=28,
-        account=1000,
         entry_date="2026-09-01",
         department=department,
         gender=1,
@@ -78,7 +75,6 @@ def test_admin_can_get_employee_list():
         name="李四",
         password="123456",
         age=30,
-        account=1000,
         entry_date="2026-09-01",
         department=department,
         gender=2,
@@ -129,7 +125,6 @@ def test_admin_can_get_employee_detail():
         name="王五",
         password="123456",
         age=32,
-        account=2000,
         entry_date="2026-09-21",
         department=department,
         gender=1,
@@ -153,7 +148,6 @@ def test_admin_can_get_employee_detail():
     assert response.status_code ==200
     assert response.data["name"] == "王五"
     assert response.data["age"] == 32
-    assert response.data["account"] == "2000.00"
     assert response.data["entry_date"] == "2026-09-21"
     assert response.data["department"] == department.id
     assert response.data["gender"] == 1
@@ -173,7 +167,6 @@ def test_admin_can_update_employee():
         name="王五",
         password="123456",
         age=32,
-        account=2000,
         entry_date="2026-09-21",
         department=department,
         gender=1,
@@ -191,7 +184,6 @@ def test_admin_can_update_employee():
         f"/api/v2/employees/{employee.id}/",
         {
             "age":35,
-            "account":5000,
         },
         format="json"
     )
@@ -203,12 +195,10 @@ def test_admin_can_update_employee():
 
     assert response.data["name"] == "王五"
     assert response.data["age"] == 35
-    assert response.data["account"] == "5000.00"
 
     employee.refresh_from_db()
 
     assert employee.age==35
-    assert response.data["account"] == "5000.00"
 
 
 #DELETE 测试
@@ -227,7 +217,6 @@ def test_admin_can_delete_employee():
         name="waitfordelete",
         password="123456",
         age=30,
-        account=1000,
         entry_date="2026-09-03",
         department=department,
         gender=1,

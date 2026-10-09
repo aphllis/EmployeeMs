@@ -9,7 +9,6 @@ def test_employee_is_not_admin():
         name="普通员工",
         password="123456",
         age=30,
-        account=1000,
         entry_date="2026-09-05",
         department=models.Department.objects.create(title="测试部门"),
         gender=1,

@@ -58,7 +58,6 @@ def _employee_data(employee):
         "id": employee.id,
         "name": employee.name,
         "age": employee.age,
-        "account": str(employee.account),
         "entry_date": employee.entry_date.isoformat(),
         "gender": employee.gender,
         "gender_display": employee.get_gender_display(),
@@ -95,11 +94,6 @@ def _employee_values(data, partial=False):
             values["entry_date"] = date.fromisoformat(data["entry_date"])
         except (TypeError, ValueError):
             raise ValueError("entry_date 必须是 YYYY-MM-DD 格式")
-    if "account" in data:
-        try:
-            values["account"] = Decimal(str(data["account"]))
-        except (InvalidOperation, TypeError, ValueError):
-            raise ValueError("account 必须是有效的数字")
     if "password" in data:
         if not isinstance(data["password"], str) or not data["password"]:
             raise ValueError("password 必须是非空字符串")

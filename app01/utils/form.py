@@ -20,7 +20,7 @@ class UserModelForm(BootstrapModelForm):
 
     class Meta:
         model = models.Employee
-        fields = ['name', 'age', 'gender', 'password', 'account', 'entry_date', 'department']
+        fields = ['name', 'age', 'gender', 'password','entry_date', 'department']
         # 插件添加样式的手动写法（不利用源码）
         # widgets={
         #     'name':forms.TextInput(attrs={'class':'form-control mb-3'}),

@@ -39,10 +39,9 @@ def usr_lst(req):
 #     gender_id = req.POST.get('gender')
 #     age = req.POST.get('age')
 #     pwd = req.POST.get('pwd')
-#     account = req.POST.get('account')
 #     entry_date = req.POST.get('entry_date')
 #     department_id = req.POST.get('department')
-#     models.Employee.objects.create(name=usr, gender=gender_id, age=age, password=pwd, account=account,
+#     models.Employee.objects.create(name=usr, gender=gender_id, age=age, password=pwd,
 #                                    entry_date=entry_date, department_id=department_id)
 #     return redirect('/usr/lst/')
 
