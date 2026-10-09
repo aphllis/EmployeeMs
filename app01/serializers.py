@@ -5,7 +5,7 @@ from rest_framework import serializers
 class EmployeeSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Employee
-        fields = ["url", "name", "age", "account", "entrytime", "depart", "gender"]
+        fields = ["url", "name", "age", "account", "entry_date", "department", "gender"]
 
 class DepartmentSerializer(serializers.ModelSerializer):
     class Meta:

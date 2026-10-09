@@ -11,13 +11,13 @@ from openpyxl import load_workbook
 
 
 # Create your views here.
-def depart_lst(req):
+def department_lst(req):
     """ 部门列表 """
     # 数据库中获取所有部门信息
     # queryset是对象列表[对象，对象，对象]
     print(req.user)
     queryset = models.Department.objects.all()
-    if not queryset:return render(req,"depart_lst.html")
+    if not queryset:return render(req,"department_lst.html")
     page_object = Pagination(request=req, queryset=queryset)
     context = {
         'queryset': page_object.page_queryset,
@@ -25,10 +25,10 @@ def depart_lst(req):
         'goto_page_str': page_object.html()[1],
         'start_index': page_object.start
     }
-    return render(req, 'depart_lst.html', context)
+    return render(req, 'department_lst.html', context)
 
 
-def depart_add(req):
+def department_add(req):
     """ 添加部门 """
     if req.method == 'GET':
         form = DepartModelForm()
@@ -36,7 +36,7 @@ def depart_add(req):
     form = DepartModelForm(data=req.POST)
     if form.is_valid():
         form.save()
-        return redirect('/depart/lst/')
+        return redirect('/department/lst/')
     return render(req, 'change.html', {'form': form, 'title': '添加部门'})
     # 非ModalForm的数据保存
     # 获取表单提交的数据
@@ -44,11 +44,11 @@ def depart_add(req):
     # # 保存到数据库
     # models.Department.objects.create(title=title)
     # # 重定向到部门列表
-    # return redirect('/depart/lst/')
+    # return redirect('/department/lst/')
 
 
 @require_POST
-def depart_batch(req):
+def department_batch(req):
     file_obj = req.FILES.get('excel_file')
     print(type(file_obj))
     print('hello')
@@ -77,27 +77,27 @@ def depart_batch(req):
     return HttpResponse("上传")
 
 
-def depart_del(req):
+def department_del(req):
     """ 删除部门 """
     nid = req.GET.get('nid')
     models.Department.objects.filter(id=nid).delete()
-    return redirect('/depart/lst/')
+    return redirect('/department/lst/')
 
 
-def depart_edit(req):
+def department_edit(req):
     """ 编辑部门 """
     nid = req.GET.get('nid')
     row_obj = models.Department.objects.filter(id=nid).first()
     if not row_obj:
-        return redirect('/depart/lst/')
+        return redirect('/department/lst/')
     if req.method == 'GET':
         form = DepartModelForm(instance=row_obj)
         return render(req, 'change.html', {'form': form, 'title': '部门编辑'})
     form = DepartModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
         form.save()
-        return redirect('/depart/lst/')
+        return redirect('/department/lst/')
     return render(req, 'change.html', {'form': form, 'title': '部门编辑'})
     # title = req.POST.get('title')
     # models.Department.objects.filter(id=nid).update(title=title)
-    # return redirect('/depart/lst/')
+    # return redirect('/department/lst/')

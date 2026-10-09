@@ -23,8 +23,8 @@ API 使用项目现有的 Session 登录态，未登录请求返回 `401` JSON �
 | GET/POST | `/api/v1/employees/` | 员工列表 / 创建员工 |
 | GET/PUT/PATCH/DELETE | `/api/v1/employees/<id>/` | 员工详情及修改 |
 
-员工列表还支持 `name` 和 `depart_id` 筛选。创建员工时需要提供
-`name`、`password`、`age`、`entrytime`（`YYYY-MM-DD`）、`depart_id` 和
+员工列表还支持 `name` 和 `department_id` 筛选。创建员工时需要提供
+`name`、`password`、`age`、`entry_date`（`YYYY-MM-DD`）、`department_id` 和
 `gender`；响应不会返回密码字段。新增和修改请求的 `Content-Type` 应为
 `application/json`。bash
 # 克隆项目到本地

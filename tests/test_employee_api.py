@@ -33,8 +33,8 @@ def test_admin_can_create_employee():
             "password": "123456",
             "age": 30,
             "account": "1000.00",
-            "entrytime": "2026-09-21",
-            "depart": department.id,
+            "entry_date": "2026-09-21",
+            "department": department.id,
             "gender": 1,
         },
         format="json",
@@ -49,7 +49,7 @@ def test_admin_can_create_employee():
 
     assert employee.age == 30
     assert employee.account == 1000
-    assert employee.depart_id == department.id
+    assert employee.department_id == department.id
     assert employee.gender == 1
 
 
@@ -70,8 +70,8 @@ def test_admin_can_get_employee_list():
         password="123456",
         age=28,
         account=1000,
-        entrytime="2026-09-01",
-        depart=department,
+        entry_date="2026-09-01",
+        department=department,
         gender=1,
     )
     models.Employee.objects.create(
@@ -79,8 +79,8 @@ def test_admin_can_get_employee_list():
         password="123456",
         age=30,
         account=1000,
-        entrytime="2026-09-01",
-        depart=department,
+        entry_date="2026-09-01",
+        department=department,
         gender=2,
     )
 
@@ -130,8 +130,8 @@ def test_admin_can_get_employee_detail():
         password="123456",
         age=32,
         account=2000,
-        entrytime="2026-09-21",
-        depart=department,
+        entry_date="2026-09-21",
+        department=department,
         gender=1,
     )
 
@@ -154,8 +154,8 @@ def test_admin_can_get_employee_detail():
     assert response.data["name"] == "王五"
     assert response.data["age"] == 32
     assert response.data["account"] == "2000.00"
-    assert response.data["entrytime"] == "2026-09-21"
-    assert response.data["depart"] == department.id
+    assert response.data["entry_date"] == "2026-09-21"
+    assert response.data["department"] == department.id
     assert response.data["gender"] == 1
 
 #PATCH 测试
@@ -174,8 +174,8 @@ def test_admin_can_update_employee():
         password="123456",
         age=32,
         account=2000,
-        entrytime="2026-09-21",
-        depart=department,
+        entry_date="2026-09-21",
+        department=department,
         gender=1,
     )
 
@@ -228,8 +228,8 @@ def test_admin_can_delete_employee():
         password="123456",
         age=30,
         account=1000,
-        entrytime="2026-09-03",
-        depart=department,
+        entry_date="2026-09-03",
+        department=department,
         gender=1,
     )
 

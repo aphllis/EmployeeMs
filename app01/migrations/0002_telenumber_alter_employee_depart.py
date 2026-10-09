@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterField(
             model_name='employee',
-            name='depart',
+            name='department',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app01.department', verbose_name='部门'),
         ),
     ]

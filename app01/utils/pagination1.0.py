@@ -14,7 +14,7 @@
            'page_str': page_object.html()[0],       #生成页码
            'goto_page_str': page_object.html()[1],  #生成跳转页码
         }
-        return render(req, 'depart_lst.html', context)
+        return render(req, 'department_lst.html', context)
 在html中:
     #查询列表
     {% for obj in queryset %}

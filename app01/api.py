@@ -59,12 +59,12 @@ def _employee_data(employee):
         "name": employee.name,
         "age": employee.age,
         "account": str(employee.account),
-        "entrytime": employee.entrytime.isoformat(),
+        "entry_date": employee.entry_date.isoformat(),
         "gender": employee.gender,
         "gender_display": employee.get_gender_display(),
         "department": {
-            "id": employee.depart_id,
-            "title": employee.depart.title,
+            "id": employee.department_id,
+            "title": employee.department.title,
         },
     }
 
@@ -76,7 +76,7 @@ def _required(data, fields):
 
 
 def _employee_values(data, partial=False):
-    fields = ("name", "age", "entrytime", "depart_id", "gender")
+    fields = ("name", "age", "entry_date", "department_id", "gender")
     if not partial:
         _required(data, fields)
     values = {}
@@ -84,17 +84,17 @@ def _employee_values(data, partial=False):
         if not isinstance(data["name"], str) or not data["name"].strip():
             raise ValueError("name 必须是非空字符串")
         values["name"] = data["name"].strip()
-    for field in ("age", "depart_id", "gender"):
+    for field in ("age", "department_id", "gender"):
         if field in data:
             try:
                 values[field] = int(data[field])
             except (TypeError, ValueError):
                 raise ValueError(f"{field} 必须是整数")
-    if "entrytime" in data:
+    if "entry_date" in data:
         try:
-            values["entrytime"] = date.fromisoformat(data["entrytime"])
+            values["entry_date"] = date.fromisoformat(data["entry_date"])
         except (TypeError, ValueError):
-            raise ValueError("entrytime 必须是 YYYY-MM-DD 格式")
+            raise ValueError("entry_date 必须是 YYYY-MM-DD 格式")
     if "account" in data:
         try:
             values["account"] = Decimal(str(data["account"]))
@@ -167,18 +167,18 @@ def department_api(request, department_id=None):
 def employee_api(request, employee_id=None):
     if request.method == "GET":
         if employee_id is not None:
-            employee = models.Employee.objects.select_related("depart").filter(
+            employee = models.Employee.objects.select_related("department").filter(
                 id=employee_id
             ).first()
             return (_error("员工不存在", 404) if employee is None
                     else JsonResponse({"data": _employee_data(employee)}))
-        queryset = models.Employee.objects.select_related("depart").order_by("id")
+        queryset = models.Employee.objects.select_related("department").order_by("id")
         name = request.GET.get("name")
         if name:
             queryset = queryset.filter(name__icontains=name)
-        depart_id = request.GET.get("depart_id")
-        if depart_id:
-            queryset = queryset.filter(depart_id=depart_id)
+        department_id = request.GET.get("department_id")
+        if department_id:
+            queryset = queryset.filter(department_id=department_id)
         try:
             rows, pagination = _pagination(request, queryset)
         except ValueError as exc:
@@ -218,6 +218,6 @@ def employee_api(request, employee_id=None):
         return _error("员工数据校验失败" if details else str(exc), details=details)
     except IntegrityError:
         return _error("员工保存失败，请确认部门存在", 409)
-    employee = models.Employee.objects.select_related("depart").get(id=employee.id)
+    employee = models.Employee.objects.select_related("department").get(id=employee.id)
     return JsonResponse({"data": _employee_data(employee)},
                         status=201 if request.method == "POST" else 200)

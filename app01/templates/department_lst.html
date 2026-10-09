@@ -3,14 +3,14 @@
 <div>
     <div class="container" style="width: 80rem">
         <div class="mb-2">
-            <a class="btn btn-success btn-sm" href="/depart/add/">
+            <a class="btn btn-success btn-sm" href="/department/add/">
                 <i class="bi bi-plus-circle-fill"></i> 新建部门
             </a>
             <button class="btn btn-sm btn-success" id="batch_add">
                 <i class="bi bi-plus-circle-fill"></i>
                 批量新建
             </button>
-            <!--            <a class="btn btn-success btn-sm" href="/depart/add/" target="_blank">-->
+            <!--            <a class="btn btn-success btn-sm" href="/department/add/" target="_blank">-->
             <!--                <i class="bi bi-plus-circle-fill"></i> 批量新建-->
             <!--            </a>-->
         </div>
@@ -34,8 +34,8 @@
                     <th scope="row">{{ start_index|add:forloop.counter }}</th>
                     <td>{{obj.title}}</td>
                     <td>
-                        <a class="btn btn-primary btn-sm" href="/depart/edit/?nid={{ obj.id}}">编辑</a>
-                        <a class="btn btn-danger btn-sm" href="/depart/del/?nid={{ obj.id}}">删除</a>
+                        <a class="btn btn-primary btn-sm" href="/department/edit/?nid={{ obj.id}}">编辑</a>
+                        <a class="btn btn-danger btn-sm" href="/department/del/?nid={{ obj.id}}">删除</a>
                     </td>
                 </tr>
                 {% endfor %}
@@ -113,7 +113,7 @@
             formdata.append('excel_file', fileInput);
             formdata.append('csrfmiddlewaretoken', getCookie('csrftoken'))
             $.ajax({
-                url: '/depart/batch/',
+                url: '/department/batch/',
                 type: 'post',
                 data: formdata,
                 dataType: "JSON",

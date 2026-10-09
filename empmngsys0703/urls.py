@@ -23,7 +23,7 @@ from django.conf import settings
 from rest_framework.routers import DefaultRouter
 from app01.views.api_views import EmployeeViewSet,DepartmentViewSet
 
-from app01.views import depart, tel, usr, admin, login, task, order, chart, upload,profile
+from app01.views import department, tel, usr, admin, login, task, order, chart, upload,profile
 from app01.api import department_api, employee_api
 
 router=DefaultRouter()
@@ -45,11 +45,11 @@ urlpatterns = [
     path("api/v2/",include(router.urls)),
     # path('admin/', admin.site.urls),
     # 部门管理
-    path("depart/lst/", depart.depart_lst),
-    path("depart/add/", depart.depart_add),
-    path("depart/del/", depart.depart_del),
-    path("depart/edit/", depart.depart_edit),
-    path("depart/batch/", depart.depart_batch),
+    path("department/lst/", department.department_lst),
+    path("department/add/", department.department_add),
+    path("department/del/", department.department_del),
+    path("department/edit/", department.department_edit),
+    path("department/batch/", department.department_batch),
     # 用户管理
     path("usr/lst/", usr.usr_lst),
     # path('usr/add/', usr.usr_add),

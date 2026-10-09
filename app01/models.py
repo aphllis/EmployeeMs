@@ -36,34 +36,72 @@ class Department(models.Model):
     """部门表"""
     title = models.CharField(verbose_name='部门名', max_length=32)
 
+    parent=models.ForeignKey(
+        "self",
+        verbose_name="上级部门",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children"
+    )
+
+    is_active=models.BooleanField(verbose_name="是否启用",default=True)
     def __str__(self):
         return self.title
+
+class Position(models.Model):
+    """职位表"""
+    name=models.CharField(
+        verbose_name="职位名称",
+        max_length=64
+    )
+
+    description=models.CharField(
+        verbose_name="说明",
+        max_length=255,
+        blank=True
+    )
+    is_active=models.BooleanField(
+        verbose_name="是否启用",
+        default=True
+    )
+
+    def __str__(self):
+        return self.name
 
 
 class Employee(models.Model):
     """员工表"""
-    name = models.CharField(verbose_name='姓名', max_length=16)
-    password = models.CharField(verbose_name='密码', max_length=64)
-    age = models.IntegerField(verbose_name='年龄')
+    name = models.CharField(verbose_name='姓名', max_length=32)
+    employee_no=models.CharField(verbose_name="工号",max_length=32,unique=True,null=True,blank=True)
+    password = models.CharField(verbose_name='旧密码字段', max_length=128)
+    age = models.IntegerField(verbose_name='年龄',null=True,blank=True)
     account = models.DecimalField(verbose_name='账户余额', max_digits=10, decimal_places=2, default=0)
-    entrytime = models.DateField(verbose_name='入职时间')
+    entry_date = models.DateField(verbose_name='入职时间',null=True,blank=True)
 
     # 无约束，部门id
-    # depart_id=models.BigIntegerField(verbose_name='部门id')
+    # department_id=models.BigIntegerField(verbose_name='部门id')
 
     # 有约束
-    # django 会将外键depart改成depart_id
+    # django 会将外键department改成department_id
     # on_delete=models.CASCADE,级联的删除
-    depart = models.ForeignKey(verbose_name='部门', to="Department", to_field="id", on_delete=models.CASCADE)
+    department=models.ForeignKey(
+        "Department",
+        verbose_name="所属部门",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="employees"
+    )
     # 置空的删除，确保该字段能够为空null=True,blank=True
-    # depart=models.ForeignKey(to="Department",to_field="id",null=True,blank=True,on_delete=SET_NULL)
+    # department=models.ForeignKey(to="Department",to_field="id",null=True,blank=True,on_delete=SET_NULL)
 
     # django的约束
     gender_choices = (
         (1, '男'),
         (2, '女')
     )
-    gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices)
+    gender = models.SmallIntegerField(verbose_name='性别', choices=gender_choices,null=True,blank=True)
 
 
 class Telenumber(models.Model):

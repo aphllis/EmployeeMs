@@ -13,9 +13,9 @@ def usr_lst(req):
     """ 用户管理"""
     # #python语法中获取值：
     # #obj.get_gender_display() 直接在models中创建性别时的元组里面匹配性别按照中文显示
-    # #原表中的外键depart_id，如果不加上_id 直接obj.depart，django会直接去关联的表中获取对象,然后可以获取对应的中文名
+    # #原表中的外键department_id，如果不加上_id 直接obj.department，django会直接去关联的表中获取对象,然后可以获取对应的中文名
     # for obj in querySet:
-    #     print(obj.name,obj.entrytime,obj.get_gender_display(),obj.depart.title)
+    #     print(obj.name,obj.entry_date,obj.get_gender_display(),obj.department.title)
     if queryset:
         page_object = Pagination(request=req, queryset=queryset)
         context = {
@@ -32,7 +32,7 @@ def usr_lst(req):
 #     if req.method == 'GET':
 #         context = {
 #             'gender_choices': models.Employee.gender_choices,
-#             'depart_info': models.Department.objects.all()
+#             'department_info': models.Department.objects.all()
 #         }
 #         return render(req, 'usr_add.html', context)
 #     usr = req.POST.get('usr')
@@ -40,10 +40,10 @@ def usr_lst(req):
 #     age = req.POST.get('age')
 #     pwd = req.POST.get('pwd')
 #     account = req.POST.get('account')
-#     entrytime = req.POST.get('entrytime')
-#     depart_id = req.POST.get('depart')
+#     entry_date = req.POST.get('entry_date')
+#     department_id = req.POST.get('department')
 #     models.Employee.objects.create(name=usr, gender=gender_id, age=age, password=pwd, account=account,
-#                                    entrytime=entrytime, depart_id=depart_id)
+#                                    entry_date=entry_date, department_id=department_id)
 #     return redirect('/usr/lst/')
 
 

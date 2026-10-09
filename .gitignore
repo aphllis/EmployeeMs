@@ -245,4 +245,5 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.tomal
 
-
+# sql
+*.sql

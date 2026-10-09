@@ -86,6 +86,6 @@ def upload_multi(req):
         # 如果不存在则添加
         if not exists:
             models.Department.objects.create(title=val)
-    return redirect('/depart/lst/')
+    return redirect('/department/lst/')
 
 
