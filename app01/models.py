@@ -214,3 +214,70 @@ class ProfileInfo(models.Model):
         verbose_name="性别", choices=gender_choices, null=True, blank=True
     )
     email = models.CharField(verbose_name="邮箱", max_length=64, null=True, blank=True)
+
+class Account(models.Model):
+    """系统登录账号"""
+    username=models.CharField(verbose_name="用户名",max_length=32,unique=True)
+
+    password=models.CharField(verbose_name="密码",max_length=128)
+
+    email=models.EmailField(
+        verbose_name="邮箱",
+        max_length=254,
+        unique=True,
+        null=True,
+        blank=True
+    )
+
+    email_verified=models.BooleanField(
+        verbose_name="邮箱已验证",
+        default=False
+    )
+
+    phone=models.CharField(
+        verbose_name="手机号",
+        max_length=20,
+        unique=True,
+        null=True,
+        blank=True
+    )
+
+    phone_verified=models.BooleanField(
+        verbose_name="手机已验证",
+        default=False
+    )
+
+    groups=models.ManyToManyField(
+        Group,
+        blank=True,
+        related_name="accounts",
+        verbose_name="角色组"
+    )
+
+    employee=models.OneToOneField(
+        "Employee",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="login_account",
+        verbose_name="关联员工",
+    )
+
+    create_at=models.DateTimeField(auto_now_add=True)
+
+    updated_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        permissions=[
+            ("manage_account_roles","can manage account roles"),
+            ("reset_account_password","can reset account password"),
+        ]
+    def has_perm(self, perm, obj=None):
+        """判断当前账号是否拥有指定权限"""
+        for backend in get_backends():
+            if backend.has_perm(self, perm, obj):
+                return True
+        return False
+
+    def __str__(self):
+        return self.username
