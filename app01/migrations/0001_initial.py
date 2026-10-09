@@ -27,9 +27,9 @@ class Migration(migrations.Migration):
                 ('password', models.CharField(max_length=64, verbose_name='密码')),
                 ('age', models.IntegerField(verbose_name='年龄')),
                 ('account', models.DecimalField(decimal_places=2, default=0, max_digits=10, verbose_name='账户余额')),
-                ('entry_date', models.DateField(verbose_name='入职时间')),
+                ('entrytime', models.DateField(verbose_name='入职时间')),
                 ('gender', models.SmallIntegerField(choices=[(1, '男'), (2, '女')], verbose_name='性别')),
-                ('department', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app01.department')),
+                ('depart', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='app01.department')),
             ],
         ),
     ]
