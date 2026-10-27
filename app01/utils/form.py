@@ -1,26 +1,28 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-from django.contrib.auth.hashers import check_password,make_password
+from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 
 from app01 import models
-from app01.utils.bootstrap import BootstrapModelForm,BootstrapForm
+from app01.utils.bootstrap import BootstrapModelForm, BootstrapForm
+
+
 # 引入正则校验
 class DepartModelForm(BootstrapModelForm):
-    title = forms.CharField(label='部门名')
+    title = forms.CharField(label="部门名")
 
     class Meta:
         model = models.Department
-        fields = ['title']
+        fields = ["title"]
 
 
 class UserModelForm(BootstrapModelForm):
-    name = forms.CharField(min_length=2, label='用户名')
+    name = forms.CharField(min_length=2, label="用户名")
 
     class Meta:
         model = models.Employee
-        fields = ['name', 'age', 'gender', 'password','entry_date', 'department']
+        fields = ["name", "age", "gender", "password", "entry_date", "department"]
         # 插件添加样式的手动写法（不利用源码）
         # widgets={
         #     'name':forms.TextInput(attrs={'class':'form-control mb-3'}),
@@ -38,17 +40,17 @@ class UserModelForm(BootstrapModelForm):
 #         else:
 #             fld.widget.attrs = {'class': 'form-control mb-3', 'PlaceHolder': fld.label}
 
+
 class TelModelForm(BootstrapModelForm):
     # 验证方式一：
     # 给手机号添加正则校验
     mobile = forms.CharField(
-        label='手机号',
-        validators=[RegexValidator(r'^1\d{10}$', '手机号格式错误')]
+        label="手机号", validators=[RegexValidator(r"^1\d{10}$", "手机号格式错误")]
     )
 
     class Meta:
         model = models.Telenumber
-        fields = ['mobile', 'price', 'level', 'status']
+        fields = ["mobile", "price", "level", "status"]
         # fields='__all__' 代表所有字段
         # exclude=['field_1'] 代表排除某个字段
 
@@ -56,7 +58,7 @@ class TelModelForm(BootstrapModelForm):
     # cleaned_data是一个字典，保存所有了类实例的表单键值，在视图函数中执行form.save()时，如果有钩子方法会调用它，然后将返回值更新到对应键，然后保存到数据库
     # 定义clean_field_name函数，是定义钩子方法，最后要返回对应键的值
     def clean_mobile(self):
-        txt_mobile = self.cleaned_data['mobile']
+        txt_mobile = self.cleaned_data["mobile"]
         # 针对添加时，手机号重复问题的校验有两个方式
         # 方式一:直接在models里面在创建表结构类时，在mobile字段定义里面添加参数unique=True
         # 方式二:在views视图函数中，创建ModelForm类时在钩子方法中通过查询对应mobile判断是否存在，已存在则抛出对应错误
@@ -65,7 +67,7 @@ class TelModelForm(BootstrapModelForm):
         #     raise ValidationError('手机号已存在')
         # 如果校验不通过，抛出错误信息
         if len(txt_mobile) != 11:
-            raise ValidationError('格式错误')
+            raise ValidationError("格式错误")
         # 否则直接返回值
         return txt_mobile
         # 方式二的注意点在于，对于编辑手机号方法而言，不能直接这样使用，否则如果要修改其他而保留手机号时会报手机号已存在错误
@@ -74,34 +76,33 @@ class TelModelForm(BootstrapModelForm):
 
 
 class AdminModelForm(BootstrapModelForm):
-    confirm_password = forms.CharField(label='确认密码',
-                                       widget=forms.PasswordInput(
-                                           render_value=True))  # 加入参数render_value=True，能够在密码校验前后不一致情况下不清空密码
-    is_active=forms.TypedChoiceField(
-        label='是否启用',
+    confirm_password = forms.CharField(
+        label="确认密码", widget=forms.PasswordInput(render_value=True)
+    )  # 加入参数render_value=True，能够在密码校验前后不一致情况下不清空密码
+    is_active = forms.TypedChoiceField(
+        label="是否启用",
         choices=(
-            (True,'是'),
-            (False,'否'),
+            (True, "是"),
+            (False, "否"),
         ),
-        coerce=lambda value:value == 'True',
-        widget=forms.RadioSelect
+        coerce=lambda value: value == "True",
+        widget=forms.RadioSelect,
     )
+
     class Meta:
         model = models.Admin
-        fields = ['username', 'password', 'confirm_password','is_active']
-        widgets = {
-            'password': forms.PasswordInput
-        }
+        fields = ["username", "password", "confirm_password", "is_active"]
+        widgets = {"password": forms.PasswordInput}
+
     # md5加密方式替换为django的hashers中的加密模式
     # 钩子函数的调用执行顺序按照fields中的字段顺序而不是函数上下顺序
     def clean_password(self):
         # return md5(self.cleaned_data.get('password'))
-        password=self.cleaned_data.get('password')
+        password = self.cleaned_data.get("password")
         if not password:
-            raise ValidationError('密码不能为空')
+            raise ValidationError("密码不能为空")
         return password
 
-    
     def clean_confirm_password(self):
         # 定义钩子方式校验加密后的 密码和确认密码的值是否一致
         # pwd = self.cleaned_data.get('password')
@@ -109,17 +110,15 @@ class AdminModelForm(BootstrapModelForm):
         # if pwd != confirm_pwd:
         #     raise ValidationError('密码不一致')
         # return confirm_pwd
-        password=self.cleaned_data.get('password')
-        confirm_password=self.cleaned_data.get('confirm_password')
-        if password!=confirm_password:
-            raise ValidationError('密码不一致')
+        password = self.cleaned_data.get("password")
+        confirm_password = self.cleaned_data.get("confirm_password")
+        if password != confirm_password:
+            raise ValidationError("密码不一致")
         return confirm_password
 
-    def save(self,commit=True):
-        obj=super().save(commit=False)
-        obj.password=make_password(
-            self.cleaned_data['password']
-        )
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.password = make_password(self.cleaned_data["password"])
         if commit:
             obj.save()
         return obj
@@ -127,30 +126,29 @@ class AdminModelForm(BootstrapModelForm):
 
 class AdminRoleForm(forms.ModelForm):
     groups = forms.ModelMultipleChoiceField(
-        label='角色',
-        queryset=Group.objects.all(),
-        widget=forms.CheckboxSelectMultiple
+        label="角色", queryset=Group.objects.all(), widget=forms.CheckboxSelectMultiple
     )
+
     class Meta:
-        model=models.Admin
-        fields=['groups']
+        model = models.Admin
+        fields = ["groups"]
+
     # 控制SuperAdmin至少保留一个
     def clean_groups(self):
-        groups=self.cleaned_data.get('groups')
+        groups = self.cleaned_data.get("groups")
         if groups is None:
             return groups
-        is_superadmin=groups.filter(name='SuperAdmin').exists()
+        is_superadmin = groups.filter(name="SuperAdmin").exists()
         if not is_superadmin:
-            other_superadmin_count=models.Admin.objects.filter(
-                groups__name='SuperAdmin'
-            ).exclude(
-                id=self.instance.pk
-            ).count()
-            if other_superadmin_count==0:
-                raise ValidationError(
-                    '系统至少需要保留一个SuperAdmin'
-                )
+            other_superadmin_count = (
+                models.Admin.objects.filter(groups__name="SuperAdmin")
+                .exclude(id=self.instance.pk)
+                .count()
+            )
+            if other_superadmin_count == 0:
+                raise ValidationError("系统至少需要保留一个SuperAdmin")
         return groups
+
     # 权限控制接入view层，作为装饰器控制
     # 根据权限动态显示groups字段
     # def __init__(self, *args,can_manage_roles=False, **kwargs):
@@ -159,18 +157,18 @@ class AdminRoleForm(forms.ModelForm):
     #         self.fields.pop('groups')
 
 
-
-
 class AdminResetModelForm(BootstrapModelForm):
-    confirm_password = forms.CharField(label='确认密码',
-                                       widget=forms.PasswordInput(
-                                           render_value=True))
+    confirm_password = forms.CharField(
+        label="确认密码", widget=forms.PasswordInput(render_value=True)
+    )
     # 加入参数render_value=True，能够在密码校验前后不一致情况下不清空密码
-    password = forms.CharField(label='新密码', widget=forms.PasswordInput, max_length=128)
+    password = forms.CharField(
+        label="新密码", widget=forms.PasswordInput, max_length=128
+    )
 
     class Meta:
         model = models.Admin
-        fields = ['password', 'confirm_password']
+        fields = ["password", "confirm_password"]
 
     def clean_password(self):
         # md5_pwd = md5(self.cleaned_data.get('password'))
@@ -179,9 +177,9 @@ class AdminResetModelForm(BootstrapModelForm):
         # if exist:
         #     raise ValidationError("不能和旧密码一致")
         # return md5_pwd
-        password=self.cleaned_data.get('password')
+        password = self.cleaned_data.get("password")
         if not password:
-            raise ValidationError('密码不能为空')
+            raise ValidationError("密码不能为空")
         return password
 
     def clean_confirm_password(self):
@@ -191,31 +189,33 @@ class AdminResetModelForm(BootstrapModelForm):
         # if pwd != confirm_pwd:
         #     raise ValidationError('密码不一致')
         # return confirm_pwd
-        password=self.cleaned_data.get('password')
-        confirm_password=self.cleaned_data.get('confirm_password')
-        if password!=confirm_password:
-            raise ValidationError('密码不一致')
+        password = self.cleaned_data.get("password")
+        confirm_password = self.cleaned_data.get("confirm_password")
+        if password != confirm_password:
+            raise ValidationError("密码不一致")
         return confirm_password
-    def save(self, commit = True):
-        obj=super().save(commit=False)
-        obj.password=make_password(self.cleaned_data['password'])
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.password = make_password(self.cleaned_data["password"])
         if commit:
             obj.save()
         return obj
-
 
 
 class TaskModelForm(BootstrapModelForm):
     class Meta:
         model = models.TaskManage
         fields = "__all__"
-        widgets={
-            'detail':forms.TextInput,
+        widgets = {
+            "detail": forms.TextInput,
         }
 
 
 class LoginForm(BootstrapForm):
-    username = forms.CharField(label="用户名", widget=forms.TextInput(attrs={"autocomplete": "off"}))
+    username = forms.CharField(
+        label="用户名", widget=forms.TextInput(attrs={"autocomplete": "off"})
+    )
     password = forms.CharField(
         label="密码", widget=forms.PasswordInput(render_value=True), required=True
     )
@@ -230,39 +230,140 @@ class LoginForm(BootstrapForm):
     #     pwd = md5(self.cleaned_data["password"])
     #     return pwd
 
-#当前管理员账号修改自己密码
+
+# 当前管理员账号修改自己密码
 class AdminChangePasswordForm(BootstrapForm):
-    old_password=forms.CharField(label="旧密码",widget=forms.PasswordInput)
+    old_password = forms.CharField(label="旧密码", widget=forms.PasswordInput)
 
-    new_password=forms.CharField(label="新密码",widget=forms.PasswordInput)
+    new_password = forms.CharField(label="新密码", widget=forms.PasswordInput)
 
-    confirm_password=forms.CharField(label="确认密码",widget=forms.PasswordInput(render_value=True))
+    confirm_password = forms.CharField(
+        label="确认密码", widget=forms.PasswordInput(render_value=True)
+    )
 
-    def __init__(self,*args,current_admin=None,**kwargs):
-        super().__init__(*args,**kwargs)
-        self.current_admin=current_admin
+    def __init__(self, *args, current_admin=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.current_admin = current_admin
 
     def clean_old_password(self):
-        old_password=self.cleaned_data.get("old_password")
+        old_password = self.cleaned_data.get("old_password")
 
         if not self.current_admin:
             raise ValidationError("账号不存在")
 
-        if not check_password(old_password,self.current_admin.password):
+        if not check_password(old_password, self.current_admin.password):
             raise ValidationError("旧密码错误")
 
         return old_password
 
     def clean_confirm_password(self):
-        new_password=self.cleaned_data.get("new_password")
-        confirm_password=self.cleaned_data.get("confirm_password")
+        new_password = self.cleaned_data.get("new_password")
+        confirm_password = self.cleaned_data.get("confirm_password")
 
-        if new_password !=confirm_password:
+        if new_password != confirm_password:
             raise ValidationError("两次密码不一致")
         return confirm_password
 
+
 class ProfileInfoForm(BootstrapModelForm):
     class Meta:
-        model=models.ProfileInfo
-        fields=["nickname","signature"]
-    
+        model = models.ProfileInfo
+        fields = ["nickname", "signature"]
+
+
+class AccountModelForm(BootstrapModelForm):
+    confirm_password = forms.CharField(
+        label="确认密码",
+        widget=forms.PasswordInput(render_value=True),
+    )
+    password = forms.CharField(
+        label="密码",
+        max_length=128,
+        widget=forms.PasswordInput(),
+    )
+    is_active = forms.TypedChoiceField(
+        label="是否启用",
+        choices=((True, "是"), (False, "否")),
+        coerce=lambda value: value == "True",
+        widget=forms.RadioSelect,
+    )
+
+    class Meta:
+        model = models.Account
+        fields = ["username", "password", "confirm_password", "is_active"]
+
+    def clean_password(self):
+        password = self.cleaned_data.get("password")
+        if not password:
+            raise ValidationError("密码不能为空")
+        return password
+
+    def clean(self):
+        cleaned = super().clean()
+        password = cleaned.get("password")
+        confirm_password = cleaned.get("confirm_password")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "密码不一致")
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.password = make_password(self.cleaned_data["password"])
+        if commit:
+            obj.save()
+        return obj
+class AccountResetModelForm(BootstrapModelForm):
+    password = forms.CharField(
+        label="新密码",
+        max_length=128,
+        widget=forms.PasswordInput(),
+    )
+    confirm_password = forms.CharField(
+        label="确认密码",
+        widget=forms.PasswordInput(render_value=True),
+    )
+
+    class Meta:
+        model = models.Account
+        fields = ["password", "confirm_password"]
+
+    def clean(self):
+        cleaned = super().clean()
+        password = cleaned.get("password")
+        confirm_password = cleaned.get("confirm_password")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "密码不一致")
+        return cleaned
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.password = make_password(self.cleaned_data["password"])
+        if commit:
+            obj.save(update_fields=["password", "updated_at"])
+        return obj
+
+
+class AccountRoleForm(forms.ModelForm):
+    groups = forms.ModelMultipleChoiceField(
+        label="角色",
+        queryset=Group.objects.all(),
+        widget=forms.CheckboxSelectMultiple,
+        required=False,
+    )
+
+    class Meta:
+        model = models.Account
+        fields = ["groups"]
+
+    def clean_groups(self):
+        groups = self.cleaned_data.get("groups")
+        if groups is None or groups.filter(name="SuperAdmin").exists():
+            return groups
+
+        other_superadmin_count = models.Account.objects.filter(
+            groups__name="SuperAdmin"
+        ).exclude(pk=self.instance.pk).distinct().count()
+
+        if other_superadmin_count == 0:
+            raise ValidationError("系统至少需要保留一个 SuperAdmin")
+        return groups
