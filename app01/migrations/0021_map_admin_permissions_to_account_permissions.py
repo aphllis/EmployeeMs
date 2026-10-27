@@ -36,7 +36,7 @@ def copy_admin_permissions_to_account_permissions(
         old_permission = (
             Permission.objects.using(db_alias)
             .filter(
-                content_tpye__app_label="app01",
+                content_type__app_label="app01",
                 content_type__model="admin",
                 codename=old_codename,
             )
@@ -113,7 +113,9 @@ def reverse_copy_account_permissions(apps, schema_editor):
 class Migration(migrations.Migration):
 
     # 保留此处 Django 自动生成的 dependencies
-
+    dependencies = [
+        ("app01", "0020_copy_admins_to_accounts"),
+    ]
     operations = [
         migrations.RunPython(
             copy_admin_permissions_to_account_permissions,
