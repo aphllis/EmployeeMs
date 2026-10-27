@@ -231,27 +231,32 @@ class LoginForm(BootstrapForm):
     #     return pwd
 
 
-# 当前管理员账号修改自己密码
-class AdminChangePasswordForm(BootstrapForm):
-    old_password = forms.CharField(label="旧密码", widget=forms.PasswordInput)
-
-    new_password = forms.CharField(label="新密码", widget=forms.PasswordInput)
-
+# 当前登录账号修改自己密码
+class AccountChangePasswordForm(BootstrapForm):
+    old_password = forms.CharField(
+        label="旧密码",
+        widget=forms.PasswordInput,
+    )
+    new_password = forms.CharField(
+        label="新密码",
+        widget=forms.PasswordInput,
+    )
     confirm_password = forms.CharField(
-        label="确认密码", widget=forms.PasswordInput(render_value=True)
+        label="确认密码",
+        widget=forms.PasswordInput(render_value=True),
     )
 
-    def __init__(self, *args, current_admin=None, **kwargs):
+    def __init__(self, *args, current_account=None, **kwargs):
         super().__init__(*args, **kwargs)
-        self.current_admin = current_admin
+        self.current_account = current_account
 
     def clean_old_password(self):
         old_password = self.cleaned_data.get("old_password")
 
-        if not self.current_admin:
+        if not self.current_account:
             raise ValidationError("账号不存在")
 
-        if not check_password(old_password, self.current_admin.password):
+        if not check_password(old_password, self.current_account.password):
             raise ValidationError("旧密码错误")
 
         return old_password
@@ -262,6 +267,7 @@ class AdminChangePasswordForm(BootstrapForm):
 
         if new_password != confirm_password:
             raise ValidationError("两次密码不一致")
+
         return confirm_password
 
 

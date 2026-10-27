@@ -190,6 +190,14 @@ class ProfileInfo(models.Model):
         null=True,
         blank=True,
     )
+    account=models.OneToOneField(
+        "Account",
+        on_delete=models.CASCADE,
+        related_name="profile_info",
+        verbose_name="登录账号",
+        null=True,
+        blank=True,
+    )
     nickname = models.CharField(verbose_name="昵称", max_length=32, unique=True)
     signature = models.CharField(verbose_name="个性签名", max_length=128, blank=True)
 

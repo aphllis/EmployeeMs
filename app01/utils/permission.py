@@ -3,7 +3,7 @@ from django.http import HttpResponse
 from app01 import models
 
 
-def get_current_admin(request):
+def get_current_account(request):
     return models.Admin.objects.filter(id=request.session["info"]["id"]).first()
 
 
@@ -18,7 +18,7 @@ def admin_permission(permission_name):
     def decorator(view_func):
         @wraps(view_func)
         def wrapper(request, *args, **kwargs):
-            current_admin = get_current_admin(request)
+            current_admin = get_current_account(request)
             if not current_admin:
                 return HttpResponse("管理员不存在", status=403)
             if not current_admin.has_perm(permission_name):

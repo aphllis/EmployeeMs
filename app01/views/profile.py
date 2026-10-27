@@ -2,11 +2,21 @@ from django.shortcuts import render,redirect
 from django.contrib.auth.hashers import make_password
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from app01.utils.permission import get_current_admin
-from app01.utils.form import ProfileInfoForm,AdminChangePasswordForm
+from app01 import models
+from app01.utils.permission import get_current_account
+from app01.utils.form import ProfileInfoForm,AccountChangePasswordForm
 def profile(req):
-    current_admin=get_current_admin(req)
-    profile_info=current_admin.profile_info
+    current_account=get_current_account(req)
+    if not current_account or not current_account.is_active:
+        req.session.flush()
+        return redirect("/login/")
+    profile_info, _ = models.ProfileInfo.objects.get_or_create(
+    account=current_account,
+    defaults={
+        "nickname": current_account.username,
+    },
+)
+    
     if req.method=="GET":
         form=ProfileInfoForm(instance=profile_info)
     else:
@@ -15,13 +25,12 @@ def profile(req):
             form.save()
             #redirect 页面重定向，刷新时执行get，render刷新页面会继续执行post提交
             return redirect("/profile/")
-    password_form=AdminChangePasswordForm()
 
     content={
-        "current_admin":current_admin,
+        "current_account":current_account,
         "profile_info":profile_info,
         "form":form,
-        "password_form":password_form
+        "password_form":AccountChangePasswordForm()
     }
     return render(req,"profile.html",content)
 
@@ -43,13 +52,14 @@ def profile(req):
 #ajax接口
 @require_POST
 def change_password(req):
-    current_admin=get_current_admin(req)
-    if not current_admin:
+    current_account=get_current_account(req)
+    if not current_account:
+        req.session.flush()
         return JsonResponse({"success":False,"error":"账号不存在"},status=403)
-    form=AdminChangePasswordForm(data=req.POST,current_admin=current_admin)
+    form=AccountChangePasswordForm(data=req.POST,current_account=current_account)
     if form.is_valid():
-        current_admin.password=make_password(form.cleaned_data["new_password"])
-        current_admin.save(update_fields=["password"])
+        current_account.password=make_password(form.cleaned_data["new_password"])
+        current_account.save(update_fields=["password"])
         return JsonResponse({"success":True})
     errors=[] 
     for field_errors in form.errors.values():
