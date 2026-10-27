@@ -79,11 +79,11 @@ def test_legacy_md5_password_auto_migrates(monkeypatch):
     old_md5_password = md5(raw_password)
 
     # 模拟保存旧md5密码
-    admin = models.Admin.objects.create(username=username, password=old_md5_password)
+    account = models.Account.objects.create(username=username, password=old_md5_password)
 
     # 测试前确认是旧md5
-    assert admin.password == old_md5_password
-    assert len(admin.password) == 32
+    assert account.password == old_md5_password
+    assert len(account.password) == 32
 
     # djano 测试客户端
     client = Client()
@@ -107,17 +107,17 @@ def test_legacy_md5_password_auto_migrates(monkeypatch):
     assert response.url == "/admin/lst/"
 
     # 重新从数据库读取管理员
-    admin.refresh_from_db()
+    account.refresh_from_db()
 
     # 密码已经不再是原来的 MD5
-    assert admin.password != old_md5_password
+    assert account.password != old_md5_password
 
     # 新密码必须能够被 Django check_password 验证
-    assert check_password(raw_password, admin.password)
+    assert check_password(raw_password, account.password)
     
     # 登录后的 session 也应该存在 
     session = client.session
-    assert session["info"]["id"] == admin.id
+    assert session["info"]["account_id"] == account.id
     assert session["info"]["username"] == username
 
 @pytest.mark.django_db
@@ -133,10 +133,10 @@ def test_django_hashed_password_login(monkeypatch):
     raw_password = "123456"
 
     django_password=make_password(raw_password)
-    admin = models.Admin.objects.create(username=username, password=django_password)
+    account = models.Account.objects.create(username=username, password=django_password)
 
-    assert admin.password == django_password
-    assert check_password(raw_password,admin.password)
+    assert account.password == django_password
+    assert check_password(raw_password,account.password)
 
     # djano 测试客户端
     client = Client()
@@ -161,13 +161,13 @@ def test_django_hashed_password_login(monkeypatch):
     assert response.url == "/admin/lst/"
 
     # 重新从数据库读取管理员
-    admin.refresh_from_db()
+    account.refresh_from_db()
 
-    assert admin.password == django_password
-    assert check_password(raw_password, admin.password)
+    assert account.password == django_password
+    assert check_password(raw_password, account.password)
     
     # 登录后的 session 也应该存在 
     session = client.session
-    assert session["info"]["id"] == admin.id
+    assert session["info"]["account_id"] == account.id
     assert session["info"]["username"] == username
 

@@ -29,8 +29,10 @@ class AuthMiddleware(MiddlewareMixin):
         # print(info_dict)
         #如果有，则返回None,继续向后执行
         if info_dict:
-            admin_obj=models.Admin.objects.filter(id=info_dict["id"]).first()
-            if not admin_obj or not admin_obj.is_active:
+            account_id=info_dict.get("account_id")
+            account_obj=models.Account.objects.filter(id=account_id).first() if account_id else None
+        
+            if not account_obj or not account_obj.is_active:
                 request.session.flush()
                 return redirect("/login/")
             return 

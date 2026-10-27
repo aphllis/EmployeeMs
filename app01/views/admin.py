@@ -42,7 +42,7 @@ def admin_lst(req):
 
     # 给分页中的每行对象计算权限以控制按钮的状态
     for obj in query_obj.page_queryset:
-        obj.current_role_ids=list(obj.groups.values_list("id",flat=True))
+        obj.current_role_ids = list(obj.groups.values_list("id", flat=True))
         # 角色权限
         obj.can_manage_roles = can_manage_admin_roles
         if not can_manage_admin_roles:
@@ -75,9 +75,9 @@ def admin_lst(req):
         "can_change_admin": can_change_admin,
         "can_delete_admin": can_delete_admin,
         "can_manage_admin_roles": can_manage_admin_roles,
-        "can_reset_admin_password":can_reset_admin_password,
-        #角色列表
-        "role_choices":list(Group.objects.values("id", "name")),
+        "can_reset_admin_password": can_reset_admin_password,
+        # 角色列表
+        "role_choices": list(Group.objects.values("id", "name")),
     }
     return render(req, "admin_lst.html", context)
 
@@ -94,6 +94,7 @@ def admin_add(req):
     context = {"form": form, "title": "添加管理员"}
     return render(req, "change.html", context)
 
+
 @admin_permission("app01.delete_admin")
 def admin_del(req, nid):
     # 禁止删除当前用户控制
@@ -106,6 +107,7 @@ def admin_del(req, nid):
         return HttpResponse("无删除权限", status=403)
     target_admin.delete()
     return redirect("/admin/lst/")
+
 
 @require_POST
 @admin_permission("app01.change_admin")
@@ -126,16 +128,29 @@ def admin_status(req, nid):
     # 不能禁用当前登录管理员
     if target_admin.id == current_admin.id and not new_status:
         return JsonResponse({"error": "无法自禁用"}, status=400)
-    # 修改状态
+
+    # 找到与旧 Admin 对应的 Account
+    account_obj = models.Account.objects.filter(username=target_admin.username).first()
+    if not account_obj:
+        return JsonResponse(
+            {"error": "未找到对应的 Account 账号"},
+            status=409,
+        )
+    # 账号状态以 Account 为准，同时暂时同步旧 Admin
+    account_obj.is_active = new_status
+    account_obj.save(update_fields=["is_active"])
+
     target_admin.is_active = new_status
     target_admin.save(update_fields=["is_active"])
+
     return JsonResponse(
         {
             "success": True,
             "id": target_admin.id,
-            "is_active": target_admin.is_active,
+            "is_active":  new_status
         }
     )
+
 
 @require_POST
 @admin_permission("app01.reset_admin_password")
@@ -145,18 +160,26 @@ def admin_reset(req, nid):
 
     if not target_admin:
         return JsonResponse({"error": "账号不存在"}, status=404)
-    
+
     form = AdminResetModelForm(data=req.POST, instance=target_admin)
     if form.is_valid():
         form.save()
-        return JsonResponse({
-            "success": True,
-            "id": target_admin.id,
-        })
-    errors=[]
+        return JsonResponse(
+            {
+                "success": True,
+                "id": target_admin.id,
+            }
+        )
+    errors = []
     for field_errors in form.errors.values():
         errors.extend(field_errors)
-    return JsonResponse({"success": False,"errors": ";".join(errors),},status=400)
+    return JsonResponse(
+        {
+            "success": False,
+            "errors": ";".join(errors),
+        },
+        status=400,
+    )
 
 
 # 装饰器权限控制
@@ -165,15 +188,15 @@ def admin_reset(req, nid):
 def admin_role(req, nid):
     row_obj = models.Admin.objects.filter(id=nid).first()
     if not row_obj:
-        return JsonResponse({"success":False,"error":"账号不存在"},status=404)
+        return JsonResponse({"success": False, "error": "账号不存在"}, status=404)
 
     form = AdminRoleForm(data=req.POST, instance=row_obj)
 
     if form.is_valid():
         form.save()
-        return JsonResponse({"success":True,"id":row_obj.id})
-    errors=[]
+        return JsonResponse({"success": True, "id": row_obj.id})
+    errors = []
 
     for field_errors in form.errors.values():
         errors.extend(field_errors)
-    return JsonResponse({"success":False,"errors":";".join(errors)},status=400)
+    return JsonResponse({"success": False, "errors": ";".join(errors)}, status=400)
