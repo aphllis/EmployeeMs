@@ -43,6 +43,7 @@ def reverse_copy_admins_to_accounts(apps, schema_editor):
 
     db_alias = schema_editor.connection.alias
 
+    # flat=True 查询单个字段，将每条结果直接作为单个值返回，而不是包装成元组。
     admin_usernames = Admin.objects.using(db_alias).values_list(
         "username",
         flat=True,

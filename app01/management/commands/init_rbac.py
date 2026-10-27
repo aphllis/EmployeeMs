@@ -96,7 +96,7 @@ class Command(BaseCommand):
         给指定 Group 添加指定 Model 的
         add / change / delete / view 四种默认权限。
         """
-        # 获取mdoel对应的ContentType
+        # 获取model对应的ContentType
         content_type = ContentType.objects.get_for_model(model)
         for action in actions:
             
