@@ -7,4 +7,4 @@ class IsAdmin(BasePermission):
         #如果request.user不是models.Admin类，就不算管理员，返回False
         # print("request.user =", request.user)
         # print("user type =", type(request.user))
-        return isinstance(request.user, models.Admin)
+        return isinstance(request.user, models.Account)

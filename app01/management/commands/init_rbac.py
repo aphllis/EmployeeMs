@@ -19,7 +19,7 @@ class Command(BaseCommand):
         #     self.stdout.write("Group already exists: SuperAdmin")
 
         # 2.定义业务类型
-        admin_model = models.Admin
+        admin_model = models.Account
         employee_model = models.Employee
         department_model = models.Department
         task_model = models.TaskManage

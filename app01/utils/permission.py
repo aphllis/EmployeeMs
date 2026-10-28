@@ -2,11 +2,6 @@ from functools import wraps
 from django.http import HttpResponse
 from app01 import models
 
-
-def get_current_account(request):
-    return models.Admin.objects.filter(id=request.session["info"]["id"]).first()
-
-
 def get_current_account(request):
     account_id = request.session.get("info", {}).get("account_id")
     if not account_id:

@@ -24,7 +24,7 @@ def test_employee_api_requires_login():
 @pytest.mark.django_db
 def test_admin_can_access_employee_api():
     # 1.创建一个测试管理员
-    admin = models.Admin.objects.create(username="pytest_admin", password="123456")
+    admin = models.Account.objects.create(username="pytest_admin", password="123456")
 
     # 2.创建api客户端
     client = APIClient()

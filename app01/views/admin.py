@@ -94,7 +94,7 @@ def admin_add(req):
     context = {"form": form, "title": "添加管理员"}
     return render(req, "change.html", context)
 
-
+@require_POST
 @account_permission("app01.delete_account")
 def admin_del(req, nid):
     # 禁止删除当前用户控制

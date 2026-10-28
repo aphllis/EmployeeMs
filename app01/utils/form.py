@@ -90,7 +90,7 @@ class AdminModelForm(BootstrapModelForm):
     )
 
     class Meta:
-        model = models.Admin
+        model = models.Account
         fields = ["username", "password", "confirm_password", "is_active"]
         widgets = {"password": forms.PasswordInput}
 
@@ -130,7 +130,7 @@ class AdminRoleForm(forms.ModelForm):
     )
 
     class Meta:
-        model = models.Admin
+        model = models.Account
         fields = ["groups"]
 
     # 控制SuperAdmin至少保留一个
@@ -141,7 +141,7 @@ class AdminRoleForm(forms.ModelForm):
         is_superadmin = groups.filter(name="SuperAdmin").exists()
         if not is_superadmin:
             other_superadmin_count = (
-                models.Admin.objects.filter(groups__name="SuperAdmin")
+                models.Account.objects.filter(groups__name="SuperAdmin")
                 .exclude(id=self.instance.pk)
                 .count()
             )
@@ -167,7 +167,7 @@ class AdminResetModelForm(BootstrapModelForm):
     )
 
     class Meta:
-        model = models.Admin
+        model = models.Account
         fields = ["password", "confirm_password"]
 
     def clean_password(self):

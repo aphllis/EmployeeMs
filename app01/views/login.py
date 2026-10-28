@@ -74,7 +74,7 @@ def login_ds(req):
             form.add_error("password","该管理员账号已被禁用")     
             return render(req,"login.html",{"form":form})
 
-        legacy_admin=models.Admin.objects.filter(username=account_obj.username).first()
+        legacy_admin=models.Account.objects.filter(username=account_obj.username).first()
         # 密码校验成功：
         # 用户名和密码正确
         # 网站服务器生成随机字符串，写入浏览器的cookie中，再写入session中

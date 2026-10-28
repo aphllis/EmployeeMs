@@ -3,23 +3,23 @@ from rest_framework.exceptions import AuthenticationFailed
 
 from app01 import models
 
-class AdminSessionAuthentication(BaseAuthentication):
+class AccountSessionAuthentication(BaseAuthentication):
     def authenticate(self, request):
         info=request.session.get('info')
 
         if not info:
             return None
-        admin_id=info.get('id')
+        account_id=info.get('account_id')
+        if not account_id:
+            raise AuthenticationFailed("登录信息缺少 Account ID")
+        account=models.Account.objects.filter(pk=account_id).first()
+        if account is None:
+            raise AuthenticationFailed("账号不存在")
 
-        try:
-            admin_obj=models.Admin.objects.get(id=admin_id)
-        except models.Admin.DoesNotExist:
-            raise AuthenticationFailed("管理员账号不存在")
-
-        if not admin_obj.is_active:
-            raise AuthenticationFailed("管理员账号已被禁用")
+        if not account.is_active:
+            raise AuthenticationFailed("账号已被禁用")
         #DRF 在viewset中会拿到这个返回值
         # 并且令request.user = admin_obj
         # request.auth = None
-        return (admin_obj,None)
+        return account,None
     

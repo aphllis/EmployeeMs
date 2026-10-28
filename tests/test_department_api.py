@@ -7,7 +7,7 @@ from app01 import models
 @pytest.mark.django_db
 def test_admin_can_create_department():
     # 创建管理员
-    admin = models.Admin.objects.create(
+    admin = models.Account.objects.create(
         username="pytest_admin_create", password="123456"
     )
 
@@ -46,7 +46,7 @@ def test_admin_can_create_department():
 @pytest.mark.django_db
 def test_admin_can_get_department_list():
 
-    admin = models.Admin.objects.create(username="pytest_admin_list", password="123456")
+    admin = models.Account.objects.create(username="pytest_admin_list", password="123456")
 
     department = models.Department.objects.create(
         title="测试部门",
@@ -76,7 +76,7 @@ def test_admin_can_get_department_list():
 @pytest.mark.django_db
 def test_admin_can_get_department_detail():
 
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin",
         password="123456"
     )
@@ -108,7 +108,7 @@ def test_admin_can_get_department_detail():
 #PATCH 测试
 @pytest.mark.django_db
 def test_admin_can_update_department():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin_patch",
         password="123456"
     )
@@ -141,7 +141,7 @@ def test_admin_can_update_department():
 #DELETE 测试
 @pytest.mark.django_db
 def test_admin_can_delete_department():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin_delete",
         password="123456"
     )

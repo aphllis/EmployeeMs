@@ -7,7 +7,7 @@ from app01 import models
 @pytest.mark.django_db
 def test_admin_can_create_employee():
     # 创建管理员
-    admin = models.Admin.objects.create(
+    admin = models.Account.objects.create(
         username="pytest_admin_create", password="123456"
     )
 
@@ -55,7 +55,7 @@ def test_admin_can_create_employee():
 @pytest.mark.django_db
 def test_admin_can_get_employee_list():
     # 1.创建管理员
-    admin = models.Admin.objects.create(username="pytest_admin_list", password="123456")
+    admin = models.Account.objects.create(username="pytest_admin_list", password="123456")
 
     # 2.创建部门
     department = models.Department.objects.create(
@@ -111,7 +111,7 @@ def test_admin_can_get_employee_list():
 @pytest.mark.django_db
 def test_admin_can_get_employee_detail():
 
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin",
         password="123456"
     )
@@ -155,7 +155,7 @@ def test_admin_can_get_employee_detail():
 #PATCH 测试
 @pytest.mark.django_db
 def test_admin_can_update_employee():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin_patch",
         password="123456"
     )
@@ -204,7 +204,7 @@ def test_admin_can_update_employee():
 #DELETE 测试
 @pytest.mark.django_db
 def test_admin_can_delete_employee():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin_delete",
         password="123456"
     )

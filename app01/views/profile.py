@@ -13,7 +13,7 @@ def profile(req):
     profile_info, _ = models.ProfileInfo.objects.get_or_create(
     account=current_account,
     defaults={
-        "nickname": current_account.username,
+        "nickname": _default_profile_nickname(current_account),
     },
 )
     
@@ -65,3 +65,12 @@ def change_password(req):
     for field_errors in form.errors.values():
         errors.extend(field_errors)
     return JsonResponse({"success":False,"errors":";".join(errors)},status=400)
+
+def _default_profile_nickname(account):
+    base=account.username
+    nickname=base
+    suffix=1
+    while models.ProfileInfo.objects.filter(nickname=nickname).exists():
+        nickname=f"{base}-{suffix}"
+        suffix+=1
+    return nickname

@@ -5,7 +5,7 @@ from app01 import models
 #不存在员工测试
 @pytest.mark.django_db
 def test_admin_get_notexistent_employee():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_notexists",
         password="123456"
     )
@@ -28,7 +28,7 @@ def test_admin_get_notexistent_employee():
 #缺少必要字段的测试
 @pytest.mark.django_db
 def test_admin_create_employee_with_missing_fields():
-    admin=models.Admin.objects.create(
+    admin=models.Account.objects.create(
         username="pytest_admin",
         password="123456"
     )

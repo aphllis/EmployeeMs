@@ -3,7 +3,7 @@
 <div class="container" style="width: 80rem">
     <div class="mb-2 d-flex">
         <div class="me-auto">
-            {% if can_add_admin %}
+            {% if can_add_account %}
             <a class="btn btn-success btn-sm" href="/admin/add/" target="_blank">
                 <i class="bi bi-plus-circle-fill"></i> 新建管理员
             </a>
@@ -63,7 +63,7 @@
                             data-username="{{obj.username}}" data-roles="{{obj.current_role_ids|join:','}}">角色</button>
                         {% endif %}
 
-                        {% if can_reset_admin_password %}
+                        {% if can_reset_account_password %}
                         <button type="button" class="btn btn-warning btn-sm reset-password-btn" data-id="{{obj.id}}"
                             data-username="{{obj.username}}">重置</button>
                         {% endif %}
@@ -153,10 +153,10 @@
     /*启用/禁用 管理员 ajax请求*/
     document.querySelectorAll(".status-btn").forEach(function (button) {
         button.addEventListener("click", function () {
-            const adminId = this.dataset.id;
+            const accountId = this.dataset.id;
             const newStatus = this.dataset.status;
 
-            fetch(`/admin/${adminId}/status/`, {
+            fetch(`/admin/${accountId}/status/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -177,10 +177,10 @@
 
 
     /*强制重置密码ajax*/
-    let resetAdminId = null;
+    let resetAccountId = null;
     document.querySelectorAll(".reset-password-btn").forEach(function (button) {
         button.addEventListener("click", function () {
-            resetAdminId = this.dataset.id;
+            resetAccountId = this.dataset.id;
 
             document.getElementById("reset-username").textContent = this.dataset.username;
 
@@ -198,7 +198,7 @@
         const password = document.getElementById("reset-password").value;
 
         const confirmPassword = document.getElementById("reset-confirm-password").value;
-        fetch(`/admin/${resetAdminId}/reset/`, {
+        fetch(`/admin/${resetAccountId}/reset/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -223,11 +223,11 @@
     /*角色管理ajax*/
     const role_choices = JSON.parse(document.getElementById("role-data").textContent)
 
-    let roleAdminId = null;
+    let roleAccountId = null;
     document.querySelectorAll(".role-btn").forEach(function (button) {
         button.addEventListener("click", function () {
             // 当前正在修改哪个管理员
-            roleAdminId = this.dataset.id;
+            roleAccountId = this.dataset.id;
 
             // 当前管理员用户名
             const username = this.dataset.username;
@@ -291,7 +291,7 @@
             console.log(key, value);
         }
         // ajax Post
-        fetch(`/admin/${roleAdminId}/role/`, {
+        fetch(`/admin/${roleAccountId}/role/`, {
             method: "POST",
             headers: {
                 "X-CSRFToken": getCookie("csrftoken")
