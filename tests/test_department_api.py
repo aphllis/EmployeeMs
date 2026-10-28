@@ -5,10 +5,10 @@ from app01 import models
 # Employee员工 CRUD测试
 # POST 测试
 @pytest.mark.django_db
-def test_admin_can_create_department():
+def test_account_can_create_department():
     # 创建管理员
-    admin = models.Account.objects.create(
-        username="pytest_admin_create", password="123456"
+    account = models.Account.objects.create(
+        username="pytest_account_create", password="123456"
     )
 
     # 创建api client
@@ -17,8 +17,8 @@ def test_admin_can_create_department():
     # 模拟管理员登录
     session = client.session
     session["info"] = {
-        "id": admin.id,
-        "username": admin.username,
+        "account_id": account.id,
+        "username": account.username,
     }
     session.save()
 
@@ -31,8 +31,8 @@ def test_admin_can_create_department():
         format="json",
     )
 
-    print("status_code=", response.status_code)
-    print("status", response.data)
+    # print("status_code=", response.status_code)
+    # print("status", response.data)
 
     #201 created
     assert response.status_code == 201
@@ -44,9 +44,9 @@ def test_admin_can_create_department():
 
 # GET 测试 
 @pytest.mark.django_db
-def test_admin_can_get_department_list():
+def test_account_can_get_department_list():
 
-    admin = models.Account.objects.create(username="pytest_admin_list", password="123456")
+    account = models.Account.objects.create(username="pytest_account_list", password="123456")
 
     department = models.Department.objects.create(
         title="测试部门",
@@ -55,7 +55,7 @@ def test_admin_can_get_department_list():
     client = APIClient()
 
     session = client.session
-    session["info"] = {"id": admin.id, "username": admin.username}
+    session["info"] = {"account_id": account.id, "username": account.username}
 
     session.save()
 
@@ -74,10 +74,10 @@ def test_admin_can_get_department_list():
 
 # GET 测试，获取具体部门的信息
 @pytest.mark.django_db
-def test_admin_can_get_department_detail():
+def test_account_can_get_department_detail():
 
-    admin=models.Account.objects.create(
-        username="pytest_admin",
+    account=models.Account.objects.create(
+        username="pytest_account",
         password="123456"
     )
 
@@ -89,8 +89,8 @@ def test_admin_can_get_department_detail():
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 
@@ -107,9 +107,9 @@ def test_admin_can_get_department_detail():
 
 #PATCH 测试
 @pytest.mark.django_db
-def test_admin_can_update_department():
-    admin=models.Account.objects.create(
-        username="pytest_admin_patch",
+def test_account_can_update_department():
+    account=models.Account.objects.create(
+        username="pytest_account_patch",
         password="123456"
     )
     department=models.Department.objects.create(
@@ -118,8 +118,8 @@ def test_admin_can_update_department():
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
     response=client.patch(
@@ -140,9 +140,9 @@ def test_admin_can_update_department():
 
 #DELETE 测试
 @pytest.mark.django_db
-def test_admin_can_delete_department():
-    admin=models.Account.objects.create(
-        username="pytest_admin_delete",
+def test_account_can_delete_department():
+    account=models.Account.objects.create(
+        username="pytest_account_delete",
         password="123456"
     )
 
@@ -156,8 +156,8 @@ def test_admin_can_delete_department():
 
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 

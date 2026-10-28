@@ -5,10 +5,10 @@ from app01 import models
 # Employee员工 CRUD测试
 # POST 测试
 @pytest.mark.django_db
-def test_admin_can_create_employee():
+def test_account_can_create_employee():
     # 创建管理员
-    admin = models.Account.objects.create(
-        username="pytest_admin_create", password="123456"
+    account = models.Account.objects.create(
+        username="pytest_account_create", password="123456"
     )
 
     # 创建部门
@@ -20,8 +20,8 @@ def test_admin_can_create_employee():
     # 模拟管理员登录
     session = client.session
     session["info"] = {
-        "id": admin.id,
-        "username": admin.username,
+        "account_id": account.id,
+        "username": account.username,
     }
     session.save()
 
@@ -53,9 +53,9 @@ def test_admin_can_create_employee():
 
 # GET 测试 独立测试单独创建员工，不依赖POST测试
 @pytest.mark.django_db
-def test_admin_can_get_employee_list():
+def test_account_can_get_employee_list():
     # 1.创建管理员
-    admin = models.Account.objects.create(username="pytest_admin_list", password="123456")
+    account = models.Account.objects.create(username="pytest_account_list", password="123456")
 
     # 2.创建部门
     department = models.Department.objects.create(
@@ -85,7 +85,7 @@ def test_admin_can_get_employee_list():
 
     # 5.模拟管理员登录
     session = client.session
-    session["info"] = {"id": admin.id, "username": admin.username}
+    session["info"] = {"account_id": account.id, "username": account.username}
 
     session.save()
 
@@ -109,10 +109,10 @@ def test_admin_can_get_employee_list():
 
 # GET 测试，获取具体某个员工的信息
 @pytest.mark.django_db
-def test_admin_can_get_employee_detail():
+def test_account_can_get_employee_detail():
 
-    admin=models.Account.objects.create(
-        username="pytest_admin",
+    account=models.Account.objects.create(
+        username="pytest_account",
         password="123456"
     )
 
@@ -133,8 +133,8 @@ def test_admin_can_get_employee_detail():
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 
@@ -154,9 +154,9 @@ def test_admin_can_get_employee_detail():
 
 #PATCH 测试
 @pytest.mark.django_db
-def test_admin_can_update_employee():
-    admin=models.Account.objects.create(
-        username="pytest_admin_patch",
+def test_account_can_update_employee():
+    account=models.Account.objects.create(
+        username="pytest_account_patch",
         password="123456"
     )
 
@@ -175,8 +175,8 @@ def test_admin_can_update_employee():
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 
@@ -203,9 +203,9 @@ def test_admin_can_update_employee():
 
 #DELETE 测试
 @pytest.mark.django_db
-def test_admin_can_delete_employee():
-    admin=models.Account.objects.create(
-        username="pytest_admin_delete",
+def test_account_can_delete_employee():
+    account=models.Account.objects.create(
+        username="pytest_account_delete",
         password="123456"
     )
 
@@ -228,8 +228,8 @@ def test_admin_can_delete_employee():
 
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 

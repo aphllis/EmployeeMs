@@ -4,8 +4,8 @@ from app01 import models
 #异常测试
 #不存在员工测试
 @pytest.mark.django_db
-def test_admin_get_notexistent_employee():
-    admin=models.Account.objects.create(
+def test_account_get_notexistent_employee():
+    account=models.Account.objects.create(
         username="pytest_notexists",
         password="123456"
     )
@@ -13,8 +13,8 @@ def test_admin_get_notexistent_employee():
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 
@@ -27,16 +27,16 @@ def test_admin_get_notexistent_employee():
 
 #缺少必要字段的测试
 @pytest.mark.django_db
-def test_admin_create_employee_with_missing_fields():
-    admin=models.Account.objects.create(
-        username="pytest_admin",
+def test_account_create_employee_with_missing_fields():
+    account=models.Account.objects.create(
+        username="pytest_account",
         password="123456"
     )
     client=APIClient()
     session=client.session
     session["info"]={
-        "id":admin.id,
-        "username":admin.username
+        "account_id":account.id,
+        "username":account.username
     }
     session.save()
 

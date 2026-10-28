@@ -19,7 +19,7 @@ class Command(BaseCommand):
         #     self.stdout.write("Group already exists: SuperAdmin")
 
         # 2.定义业务类型
-        admin_model = models.Account
+        account_model = models.Account
         employee_model = models.Employee
         department_model = models.Department
         task_model = models.TaskManage
@@ -28,7 +28,7 @@ class Command(BaseCommand):
         ### 3.SuperAdmin ###
         # 需要管理的Model
         superadmin_models = [
-            admin_model,
+            account_model,
             employee_model,
             department_model,
             task_model,
@@ -41,21 +41,25 @@ class Command(BaseCommand):
                 superadmin, model, ["add", "change", "delete", "view"]
             )
         # 自定义：管理员角色管理权限
-        manage_admin_roles = Permission.objects.get(
-            content_type__app_label="app01", codename="manage_admin_roles"
+        manage_account_roles = Permission.objects.get(
+            content_type__app_label="app01",
+            content_type__app_model="account",
+            codename="manage_account_roles"
         )
 
-        superadmin.permissions.add(manage_admin_roles)
+        superadmin.permissions.add(manage_account_roles)
 
-        reset_admin_password = Permission.objects.get(
-            content_type__app_label="app01",codename="reset_admin_password"
+        reset_account_password = Permission.objects.get(
+            content_type__app_label="app01", 
+            content_type__app_model="account",
+            codename="reset_account_password"
         )
 
-        superadmin.permissions.add(reset_admin_password)
+        superadmin.permissions.add(reset_account_password)
         ### 4.HRAdmin ###
 
         hr_models = [
-            admin_model,
+            account_model,
             employee_model,
             department_model,
         ]
@@ -79,7 +83,7 @@ class Command(BaseCommand):
 
         ### 6.ReadOnly ###
         readonly_models = [
-            admin_model,
+            account_model,
             employee_model,
             department_model,
             task_model,
@@ -99,7 +103,7 @@ class Command(BaseCommand):
         # 获取model对应的ContentType
         content_type = ContentType.objects.get_for_model(model)
         for action in actions:
-            
+
             codename = f"{action}_{model._meta.model_name}"
             permission = Permission.objects.get(
                 content_type=content_type, codename=codename

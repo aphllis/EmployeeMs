@@ -22,35 +22,35 @@ def test_employee_api_requires_login():
 
 # 注册登录测试
 @pytest.mark.django_db
-def test_admin_can_access_employee_api():
+def test_account_can_access_employee_api():
     # 1.创建一个测试管理员
-    admin = models.Account.objects.create(username="pytest_admin", password="123456")
+    account = models.Account.objects.create(username="pytest_account", password="123456")
 
     # 2.创建api客户端
     client = APIClient()
 
     # 3.模拟django session登录
     session = client.session
-    session["info"] = {"id": admin.id, "username": admin.username}
+    session["info"]={"account_id":account.pk,"username":account.username}
     session.save()
 
     # 4.请求Employee api
     response = client.get("/api/v2/employees/")
 
-    print("status_code=", response.status_code)
-    print("response=", response.data)
+    # print("status_code=", response.status_code)
+    # print("response=", response.data)
 
     # 5.管理员访问情况判断
     assert response.status_code == 200
 
 
-# 无效admin登录测试
+# 无效account登录测试
 @pytest.mark.django_db
-def test_invalid_admin_session():
+def test_invalid_account_session():
     client = APIClient()
 
     session = client.session
-    session["info"] = {"id": 999999, "username": "not_exist"}
+    session["info"] = {"account_id": 999999, "username": "not_exist"}
     session.save()
 
     response = client.get("/api/v2/employees/")
@@ -73,7 +73,7 @@ def test_legacy_md5_password_auto_migrates(monkeypatch):
     """
     # monkeypatch ,由于真实web登录里面用到redis存储验证码，所以用monkeypatch模拟redis的验证码读取
 
-    username = "legacy_admin"
+    username = "legacy_account"
     raw_password = "123456"
 
     old_md5_password = md5(raw_password)
@@ -129,7 +129,7 @@ def test_django_hashed_password_login(monkeypatch):
     3. 登录成功 
     4. 密码保持原来的 Django Hash
     """
-    username = "legacy_admin"
+    username = "legacy_account"
     raw_password = "123456"
 
     django_password=make_password(raw_password)

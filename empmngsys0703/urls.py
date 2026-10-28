@@ -29,6 +29,7 @@ from app01.api import department_api, employee_api
 router=DefaultRouter()
 router.register(r"employees",EmployeeViewSet)
 router.register(r"departments",DepartmentViewSet)
+
 urlpatterns = [
     # RESTFUL API django原生实现
     path("api/v1/departments/", department_api),
@@ -43,7 +44,7 @@ urlpatterns = [
     ),
     # RESTFUL API DRF实现
     path("api/v2/",include(router.urls)),
-    # path('admin/', admin.site.urls),
+
     # 部门管理
     path("department/lst/", department.department_lst),
     path("department/add/", department.department_add),
