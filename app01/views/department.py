@@ -4,13 +4,16 @@ from django.shortcuts import render, redirect, HttpResponse
 from django.template.defaultfilters import title
 from django.views.decorators.http import require_POST
 from django.http import JsonResponse
+
 from app01 import models
 from app01.utils.pagination import Pagination
 from app01.utils.form import DepartModelForm
+from app01.utils.permission import account_permission
 from openpyxl import load_workbook
 
 
 # Create your views here.
+@account_permission("app01.view_department")
 def department_lst(req):
     """ 部门列表 """
     # 数据库中获取所有部门信息
@@ -27,7 +30,7 @@ def department_lst(req):
     }
     return render(req, 'department_lst.html', context)
 
-
+@account_permission("app01.add_department")
 def department_add(req):
     """ 添加部门 """
     if req.method == 'GET':
@@ -48,6 +51,7 @@ def department_add(req):
 
 
 @require_POST
+@account_permission("app01.add_department")
 def department_batch(req):
     file_obj = req.FILES.get('excel_file')
     print(type(file_obj))
@@ -74,16 +78,15 @@ def department_batch(req):
         traceback.print_exc()
         return JsonResponse({'error':f'文件解析失败:{str(e)}'},status=400)
 
-    return HttpResponse("上传")
-
-
+@require_POST
+@account_permission("app01.delete_department")
 def department_del(req):
     """ 删除部门 """
     nid = req.GET.get('nid')
     models.Department.objects.filter(id=nid).delete()
     return redirect('/department/lst/')
 
-
+@account_permission("app01.change_department")
 def department_edit(req):
     """ 编辑部门 """
     nid = req.GET.get('nid')

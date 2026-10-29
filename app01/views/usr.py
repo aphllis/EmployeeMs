@@ -1,15 +1,19 @@
 from django.shortcuts import render, redirect, HttpResponse
 from django.template.defaultfilters import title
+from django.contrib.auth.hashers import make_password
+from django.views.decorators.http import require_POST
 
 from app01 import models
 from app01.utils.pagination import Pagination
-from app01.utils.form import UserModelForm, TelModelForm
+from app01.utils.form import UserModelForm
+from app01.utils.permission import account_permission,get_current_account
 
-
+@account_permission("app01.view_employee")
 def usr_lst(req):
     queryset = models.Employee.objects.all()
-    form=UserModelForm()
-    if not queryset:return render(req,"usr_lst.html",{"form":form})
+    form = UserModelForm()
+    if not queryset:
+        return render(req, "usr_lst.html", {"form": form})
     """ 用户管理"""
     # #python语法中获取值：
     # #obj.get_gender_display() 直接在models中创建性别时的元组里面匹配性别按照中文显示
@@ -19,12 +23,11 @@ def usr_lst(req):
     if queryset:
         page_object = Pagination(request=req, queryset=queryset)
         context = {
-            'queryset': page_object.page_queryset,
-            'page_str': page_object.html()[0],
-            'goto_page_str': page_object.html()[1],
+            "queryset": page_object.page_queryset,
+            "page_str": page_object.html()[0],
+            "goto_page_str": page_object.html()[1],
         }
-        return render(req, 'usr_lst.html', context)
-
+        return render(req, "usr_lst.html", context)
 
 
 # def usr_add(req):
@@ -47,11 +50,12 @@ def usr_lst(req):
 
 
 # ############## modelform示例 ##############
+@account_permission("app01.add_employee")
 def usr_modelform_add(req):
-    """ 添加用户（modelform版本）"""
-    if req.method == 'GET':
+    """添加用户（modelform版本）"""
+    if req.method == "GET":
         form = UserModelForm()
-        return render(req, 'change.html', {'form': form,'title':'添加用户'})
+        return render(req, "change.html", {"form": form, "title": "添加用户"})
 
     # 用户POST提交数据，数据校验
     form = UserModelForm(data=req.POST)
@@ -60,32 +64,35 @@ def usr_modelform_add(req):
         # 原始保存方式是models.Employee.objects.create(field1=value1,field2=value2,...)
         print(form.cleaned_data)
         form.save()
-        return redirect('/usr/lst/')
+        return redirect("/usr/lst/")
     # 校验失败，在页面上显示错误信息
     # 此时的form实例里面有了用户提交的未通过校验的数据，在前端中展示
-    return render(req, 'change.html', {'form': form,'title':'添加用户'})
+    return render(req, "change.html", {"form": form, "title": "添加用户"})
 
 
+@account_permission("app01.change_employee")
 def usr_edit(req, nid):
     row_obj = models.Employee.objects.filter(id=nid).first()
     if not row_obj:
-        return redirect('/usr/lst/')
-    if req.method == 'GET':
+        return redirect("/usr/lst/")
+    if req.method == "GET":
         # 注意，filter()方法返回的永远是queryset集合，本身不触发数据库查询
         # 只有用到first() 或者[0]或者遍历打印时才会触发数据库查询
         form = UserModelForm(instance=row_obj)
-        return render(req, 'change.html', {'form': form,'title':'编辑用户'})
+        return render(req, "change.html", {"form": form, "title": "编辑用户"})
     # 与添加用户不同的是需要通过行对象的获取告诉django数据应该在其上更新
     form = UserModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
         # 默认保存用户输入的所有数据，如果要将某字段改成其他值可以如下：
         # form.instance.field_name=value
-        print(form.cleaned_data)
+        employee = form.save(commit=False)
+        employee.password = make_password(None)
         form.save()
-        return redirect('/usr/lst/')
-    return render(req, 'usr_edit.html', {'form': form,'title':'编辑用户'})
+        return redirect("/usr/lst/")
+    return render(req, "usr_edit.html", {"form": form, "title": "编辑用户"})
 
-
+@require_POST
+@account_permission("app01.delete_employee")
 def usr_del(req, nid):
     models.Employee.objects.filter(id=nid).delete()
-    return redirect('/usr/lst/')
+    return redirect("/usr/lst/")
