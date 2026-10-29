@@ -67,9 +67,12 @@
                         <button type="button" class="btn btn-warning btn-sm reset-password-btn" data-id="{{obj.id}}"
                             data-username="{{obj.username}}">重置</button>
                         {% endif %}
-
+                        
                         {% if obj.can_delete %}
-                        <a class="btn btn-danger btn-sm" href="/admin/{{obj.id}}/del/">删除</a>
+                        <form action="/admin/{{obj.id}}/del/" method="post" style="display: inline-block;">
+                            {% csrf_token %}
+                            <button class="btn btn-danger btn-sm">删除</button>
+                        </form>
                         {% else %}
                         <span data-bs-toggle="tooltip" title="{{ obj.delete_disabled_reason}}">
                             <button type="button" class="btn btn-danger btn-sm" disabled>删除</button>
