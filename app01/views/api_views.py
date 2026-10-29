@@ -11,7 +11,7 @@ class EmployeeViewSet(viewsets.ModelViewSet):
     """
     API endpoint that allows users to be viewed or edited.
     """
-
+    #加上oder_by方便drf的分页器进行分页，不加会报警告
     queryset = models.Employee.objects.all().order_by("id")
     serializer_class = EmployeeSerializer
     authentication_classes=[AccountSessionAuthentication]

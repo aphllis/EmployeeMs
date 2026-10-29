@@ -43,7 +43,7 @@ class Command(BaseCommand):
         # 自定义：管理员角色管理权限
         manage_account_roles = Permission.objects.get(
             content_type__app_label="app01",
-            content_type__app_model="account",
+            content_type__model="account",
             codename="manage_account_roles"
         )
 
@@ -51,7 +51,7 @@ class Command(BaseCommand):
 
         reset_account_password = Permission.objects.get(
             content_type__app_label="app01", 
-            content_type__app_model="account",
+            content_type__model="account",
             codename="reset_account_password"
         )
 
