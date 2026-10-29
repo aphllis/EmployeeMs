@@ -171,3 +171,34 @@ def test_django_hashed_password_login(monkeypatch):
     assert session["info"]["account_id"] == account.id
     assert session["info"]["username"] == username
 
+@pytest.mark.django_db
+@pytest.mark.parametrize("account_state",["disabled","delete"])
+def test_api_v2_rejects_disabled_or_deleted_account(account_state):
+    account=models.Account.objects.create(
+        username=f"api_v2_{account_state}",
+        password="unused",
+        is_active=True,
+    )
+    client=APIClient()
+    session=client.session
+    session["info"]={
+        "account_id":account.pk,
+        "username":account.username
+    }
+    session.save()
+
+    #启用状态下，确认这个sessions可以访问api v2
+    response=client.get("/api/v2/employees/")
+    assert response.status_code==200
+
+    #改变数据库里的账号状态，保留客户端原session
+    if account_state=="disabled":
+        account.is_active=False
+        account.save(update_fields=["is_active"])
+    else:
+        account.delete()
+
+    # 同一session再次请求时应该被拒绝
+    response=client.get("/api/v2/employees/")
+    assert response.status_code==403
+
