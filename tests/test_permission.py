@@ -2,6 +2,7 @@ import pytest
 from rest_framework.test import  APIRequestFactory
 from app01 import models
 from app01 import permissions
+
 # 权限测试，普通员工和管理员区分
 @pytest.mark.django_db
 def test_employee_is_not_admin():
@@ -16,6 +17,7 @@ def test_employee_is_not_admin():
     factory=APIRequestFactory()
     request=factory.get("/api/v2/epmployees/")
     request.user=employee
+    
     permission=permissions.IsAdmin()
 
     assert permission.has_permission(

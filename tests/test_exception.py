@@ -1,6 +1,7 @@
 import pytest
 from rest_framework.test import  APIClient
 from app01 import models
+from tests.helpers import grant_model_permission
 #异常测试
 #不存在员工测试
 @pytest.mark.django_db
@@ -10,6 +11,7 @@ def test_account_get_notexistent_employee():
         password="123456"
     )
 
+    grant_model_permission(account,"employee","view")
     client=APIClient()
     session=client.session
     session["info"]={
@@ -20,8 +22,8 @@ def test_account_get_notexistent_employee():
 
     response=client.get("/api/v2/employees/99999/")
 
-    print("status_code=",response.status_code)
-    print("response=",response.data)
+    # print("status_code=",response.status_code)
+    # print("response=",response.data)
 
     assert response.status_code == 404
 
@@ -32,6 +34,8 @@ def test_account_create_employee_with_missing_fields():
         username="pytest_account",
         password="123456"
     )
+
+    grant_model_permission(account,"employee","add")
     client=APIClient()
     session=client.session
     session["info"]={
@@ -48,7 +52,7 @@ def test_account_create_employee_with_missing_fields():
         format="json"
     )
 
-    print("status_code=",response.status_code)
-    print("response=",response.data)
+    # print("status_code=",response.status_code)
+    # print("response=",response.data)
 
     assert response.status_code == 400
