@@ -3,12 +3,15 @@
 {% block css %}
 <style>
     .custom-warning-modal .modal-header {
-        background-color: #ffc107; /* 警告颜色 */
-        color: #000; /* 文字颜色 */
+        background-color: #ffc107;
+        /* 警告颜色 */
+        color: #000;
+        /* 文字颜色 */
     }
 
     .custom-warning-modal .modal-content {
-        border: none; /* 移除默认边框 */
+        border: none;
+        /* 移除默认边框 */
     }
 </style>
 
@@ -25,11 +28,11 @@
             <div class="modal-content">
                 <div class="modal-header">
                     <h1 class="modal-title fs-5" id="ModalLabel"></h1>
-                                       <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <form id="addForm" novalidate>
-                        {% crsf_token %}
+                        {% csrf_token %}
                         <div class="row row-cols-2">
                             {% for field in form %}
                             <div class="col ">
@@ -37,7 +40,7 @@
                                     <div class="form-label ">{{field.label}}</div>
                                     {{field}}
                                     <span class="errors_msg"
-                                          style="color: red;font-size: 1em;position: absolute;"></span>
+                                        style="color: red;font-size: 1em;position: absolute;"></span>
                                 </div>
                             </div>
                             {% endfor %}
@@ -58,31 +61,31 @@
         <div></div>
         <table class="table table-bordered mb-0 text-center">
             <thead>
-            <tr>
-                <th scope="col">Id</th>
-                <th scope="col">订单号</th>
-                <th scope="col">名称</th>
-                <th scope="col">价格</th>
-                <th scope="col">支付状态</th>
-                <th scope="col">购买者</th>
-                <th scope="col">操作</th>
-            </tr>
+                <tr>
+                    <th scope="col">Id</th>
+                    <th scope="col">订单号</th>
+                    <th scope="col">名称</th>
+                    <th scope="col">价格</th>
+                    <th scope="col">支付状态</th>
+                    <th scope="col">购买者</th>
+                    <th scope="col">操作</th>
+                </tr>
             </thead>
             <tbody>
-            {% for obj in queryset %}
-            <tr>
-                <th scope="row">{{obj.id}}</th>
-                <td>{{obj.oid}}</td>
-                <td>{{obj.title}}</td>
-                <td>{{obj.price}}</td>
-                <td>{{obj.get_status_display}}</td>
-                <td>{{ obj.created_by.username|default:"未记录" }}</td>
-                <td>
-                    <input uid="{{obj.id}}" type="button" class="btn btn-primary btn-sm btn-edit" value="编辑">
-                    <!-- <input uid="{{obj.id}}" type="button" class="btn btn-sm btn-danger btn-del" value="删除"> -->
-                </td>
-            </tr>
-            {% endfor %}
+                {% for obj in queryset %}
+                <tr>
+                    <th scope="row">{{obj.id}}</th>
+                    <td>{{obj.oid}}</td>
+                    <td>{{obj.title}}</td>
+                    <td>{{obj.price}}</td>
+                    <td>{{obj.get_status_display}}</td>
+                    <td>{{ obj.created_by.username|default:"未记录" }}</td>
+                    <td>
+                        <input uid="{{obj.id}}" type="button" class="btn btn-primary btn-sm btn-edit" value="编辑">
+                        <!-- <input uid="{{obj.id}}" type="button" class="btn btn-sm btn-danger btn-del" value="删除"> -->
+                    </td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -94,7 +97,7 @@
             {{ goto_page_str }}
         </ul>
     </div>
-    <div class="modal fade" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel"
+    <!-- <div class="modal fade" id="warningModal" tabindex="-1" aria-labelledby="warningModalLabel"
          aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content custom-warning-modal">
@@ -114,7 +117,7 @@
                 </div>
             </div>
         </div>
-    </div>
+    </div> -->
 
 </div>
 {% endblock %}
@@ -125,7 +128,7 @@
     let myModal;
     let addbtnEl;
     let mywarning;
-    let del_id;
+    // let del_id;
     let edit_id = undefined;
     //必须保证代码在 DOM 元素渲染完毕之后执行
     $(function () {
@@ -134,7 +137,7 @@
         addbtnEl = document.getElementById('add_btn');
         Add_btn();
         Save_btn();
-        Del_btn();
+        // Del_btn();
         Edit_btn();
     })
 
@@ -172,7 +175,7 @@
             $('.errors_msg').empty()
             //将edit_id作为标识后端，后端判断如果edit_id值为空那么走新建保存，否则走编辑保存
             var formatdata = $('#addForm').serializeArray()
-            formatdata.push({name: 'edit_id', value: edit_id})
+            formatdata.push({ name: 'edit_id', value: edit_id })
             $.ajax({
                 url: '/order/change/',
                 type: 'post',
@@ -199,29 +202,29 @@
         })
     }
 
-    function Del_btn() {
-        $(".btn-del").click(function () {
-            mywarning.show();
-            del_id = $(this).attr("uid");
-        })
-        $("#confirm_del").click(function () {
-            $.ajax({
-                url: "/order/del/",
-                type: "get",
-                data: {uid: del_id},
-                dataType: "JSON",
-                success: function (res) {
-                    if (res.status) {
-                        mywarning.hide();
-                        del_id = 0;
-                        location.reload();
-                    } else {
-                        alert(res.error);
-                    }
-                }
-            })
-        })
-    }
+    // function Del_btn() {
+    //     $(".btn-del").click(function () {
+    //         mywarning.show();
+    //         del_id = $(this).attr("uid");
+    //     })
+    //     $("#confirm_del").click(function () {
+    //         $.ajax({
+    //             url: "/order/del/",
+    //             type: "post",
+    //             data: {uid: del_id},
+    //             dataType: "JSON",
+    //             success: function (res) {
+    //                 if (res.status) {
+    //                     mywarning.hide();
+    //                     del_id = 0;
+    //                     location.reload();
+    //                 } else {
+    //                     alert(res.error);
+    //                 }
+    //             }
+    //         })
+    //     })
+    // }
 
     function Edit_btn() {
         $(".btn-edit").click(function () {
@@ -232,7 +235,7 @@
             $.ajax({
                 url: "/order/detail/",
                 type: "get",
-                data: {uid: edit_id},
+                data: { uid: edit_id },
                 dataType: "JSON",
                 success: function (res) {
                     if (res.status) {

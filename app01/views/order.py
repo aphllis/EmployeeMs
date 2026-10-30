@@ -41,7 +41,6 @@ def order_lst(req):
     return render(req, "order_lst.html", context)
 
 @require_POST
-@account_permission("app01.change_order")
 def order_change(req):
     """新建订单（Ajax请求）"""
     account=get_current_account(req)
