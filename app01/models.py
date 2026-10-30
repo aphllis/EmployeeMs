@@ -176,9 +176,18 @@ class Order(models.Model):
         verbose_name="处理状态", choices=status_choices, default=1
     )
     admin = models.ForeignKey(
-        verbose_name="负责人", to=Admin, to_field="id", on_delete=models.CASCADE
+        verbose_name="负责人", to=Admin, to_field="id", on_delete=models.CASCADE,null=True,blank=True
     )
     detail = models.TextField(verbose_name="详细说明", blank=True)
+
+    created_by=models.ForeignKey(
+        "Account",
+        verbose_name="创建账号",
+        on_delete=models.PROTECT,
+        related_name="created_orders",
+        null=True,
+        blank=True
+    )
 
 
 class ProfileInfo(models.Model):

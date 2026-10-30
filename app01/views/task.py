@@ -11,25 +11,28 @@ from app01.utils.form import TaskModelForm
 from app01.utils.pagination import Pagination
 from app01.utils.permission import account_permission
 
+
 @account_permission("app01.view_taskmanage")
 def task_lst(req):
-    queryset=models.TaskManage.objects.all().order_by('-id')
+    queryset = models.TaskManage.objects.all().order_by("-id")
     form = TaskModelForm()
-    if not queryset:return render(req,'task_lst.html',{'form':form})
+    if not queryset:
+        return render(req, "task_lst.html", {"form": form})
 
-    obj=Pagination(request=req,queryset=queryset,page_size=5)
-    context={
-        'form':form,
-        'queryset':obj.page_queryset,
-        'page_str':obj.html()[0],
-        'goto_page_str':obj.html()[1],
-        'goto_page':obj.goto_page
+    obj = Pagination(request=req, queryset=queryset, page_size=5)
+    context = {
+        "form": form,
+        "queryset": obj.page_queryset,
+        "page_str": obj.html()[0],
+        "goto_page_str": obj.html()[1],
+        "goto_page": obj.goto_page,
     }
-    return render(req, 'task_lst.html', context)
+    return render(req, "task_lst.html", context)
 
 
 # 免除post请求时的csrf_token获取
 # @csrf_exempt
+
 
 def task_ajax(req):
     print(req.GET)
@@ -44,50 +47,68 @@ def task_ajax(req):
 @account_permission("app01.add_taskmanage")
 def task_add(req):
     print(req.POST)
-    #对用户提交的ajax数据进行校验（modelform校验）
-    form=TaskModelForm(data=req.POST)
+    # 对用户提交的ajax数据进行校验（modelform校验）
+    form = TaskModelForm(data=req.POST)
     if form.is_valid():
-        #保存到数据库
+        # 保存到数据库
         form.save()
-        data_dict = {'status': True}
+        data_dict = {"status": True}
         return HttpResponse(json.dumps(data_dict))
-    print(type(form.errors),form.errors)
-    data_dict = {'status': False,"errors":form.errors}
-    print(json.dumps(data_dict,ensure_ascii=False))
+    print(type(form.errors), form.errors)
+    data_dict = {"status": False, "errors": form.errors}
+    print(json.dumps(data_dict, ensure_ascii=False))
 
-    return HttpResponse(json.dumps(data_dict,ensure_ascii=False))
+    return HttpResponse(json.dumps(data_dict, ensure_ascii=False))
 
 
 @require_POST
 @account_permission("app01.delete_taskmanage")
 def task_del(req):
-    uid=req.GET.get("uid")
-    exist=models.TaskManage.objects.filter(id=uid).exists()
+    uid = req.POST.get("uid")
+    exist = models.TaskManage.objects.filter(id=uid).exists()
     if not exist:
-        return JsonResponse({"status":False,"error":"数据不存在"})
+        return JsonResponse({"status": False, "error": "数据不存在"})
     models.TaskManage.objects.filter(id=uid).delete()
-    return JsonResponse({"status":True})
+    return JsonResponse({"status": True})
 
 
 @account_permission("app01.view_taskmanage")
 def task_detail(req):
-    uid=req.GET.get("uid")
-    row_obj=models.TaskManage.objects.filter(id=uid).values('level','title','detail','executor').first()
+    uid = req.GET.get("uid")
+    row_obj = (
+        models.TaskManage.objects.filter(id=uid)
+        .values("level", "title", "detail", "executor")
+        .first()
+    )
     if not row_obj:
-        return JsonResponse({'status':False,'error':'任务不存在'})
-    return JsonResponse({'status':True,'data':row_obj})
+        return JsonResponse({"status": False, "error": "任务不存在"})
+    return JsonResponse({"status": True, "data": row_obj})
+
 
 # @csrf_exempt
 @require_POST
 @account_permission("app01.change_taskmanage")
 def task_edit(req):
-    query_dict=copy.copy(req.POST)
-    edit_id=query_dict.pop("edit_id",None)[0]
-    print("edit_id={}".format(edit_id))
-    row_obj=models.TaskManage.objects.filter(id=edit_id).first()
-    form = TaskModelForm(data=query_dict,instance=row_obj)
+    query_dict = req.POST.copy()
+    edit_id=req.POST.get("edit_id")
+    query_dict.pop("edit_id", None)
+
+    if not edit_id:
+        return JsonResponse(
+            {"status":False,"error":"缺少任务编号"},
+            status=400,
+        )
+    
+    # print("edit_id={}".format(edit_id))
+    row_obj = models.TaskManage.objects.filter(id=edit_id).first()
+    if not row_obj:
+        return JsonResponse(
+            {"status": False, "error": "任务不存在"},
+            status=404,
+        )
+    
+    form = TaskModelForm(data=query_dict, instance=row_obj)
     if form.is_valid():
         form.save()
-        return JsonResponse({'status':True})
-    return JsonResponse({'status':False,'errors':form.errors})
-
+        return JsonResponse({"status": True})
+    return JsonResponse({"status": False, "errors": form.errors},status=400)
