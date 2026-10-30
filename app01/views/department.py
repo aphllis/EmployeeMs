@@ -82,7 +82,7 @@ def department_batch(req):
 @account_permission("app01.delete_department")
 def department_del(req):
     """ 删除部门 """
-    nid = req.GET.get('nid')
+    nid = req.POST.get('nid')
     models.Department.objects.filter(id=nid).delete()
     return redirect('/department/lst/')
 

@@ -1,12 +1,17 @@
-import django.forms.utils
+import json
+import copy
+
 from django.http import JsonResponse
 from django.shortcuts import render, HttpResponse
 from django.views.decorators.csrf import csrf_exempt, ensure_csrf_cookie
-import json
-from app01.utils.form import TaskModelForm
+from django.views.decorators.http import require_POST
+
 from app01 import models
+from app01.utils.form import TaskModelForm
 from app01.utils.pagination import Pagination
-import copy
+from app01.utils.permission import account_permission
+
+@account_permission("app01.view_taskmanage")
 def task_lst(req):
     queryset=models.TaskManage.objects.all().order_by('-id')
     form = TaskModelForm()
@@ -24,7 +29,8 @@ def task_lst(req):
 
 
 # 免除post请求时的csrf_token获取
-@csrf_exempt
+# @csrf_exempt
+
 def task_ajax(req):
     print(req.GET)
     print(req.POST)
@@ -33,7 +39,9 @@ def task_ajax(req):
     return HttpResponse(json_str)
 
 
-@csrf_exempt
+# @csrf_exempt
+@require_POST
+@account_permission("app01.add_taskmanage")
 def task_add(req):
     print(req.POST)
     #对用户提交的ajax数据进行校验（modelform校验）
@@ -49,6 +57,9 @@ def task_add(req):
 
     return HttpResponse(json.dumps(data_dict,ensure_ascii=False))
 
+
+@require_POST
+@account_permission("app01.delete_taskmanage")
 def task_del(req):
     uid=req.GET.get("uid")
     exist=models.TaskManage.objects.filter(id=uid).exists()
@@ -58,7 +69,7 @@ def task_del(req):
     return JsonResponse({"status":True})
 
 
-
+@account_permission("app01.view_taskmanage")
 def task_detail(req):
     uid=req.GET.get("uid")
     row_obj=models.TaskManage.objects.filter(id=uid).values('level','title','detail','executor').first()
@@ -66,7 +77,9 @@ def task_detail(req):
         return JsonResponse({'status':False,'error':'任务不存在'})
     return JsonResponse({'status':True,'data':row_obj})
 
-@csrf_exempt
+# @csrf_exempt
+@require_POST
+@account_permission("app01.change_taskmanage")
 def task_edit(req):
     query_dict=copy.copy(req.POST)
     edit_id=query_dict.pop("edit_id",None)[0]

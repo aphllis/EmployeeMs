@@ -62,8 +62,9 @@ def usr_modelform_add(req):
     if form.is_valid():
         # 如果数据合法，调用form.save()将自动保存数据到数据库表中，哪个表？上面的UserModelForm类中的嵌套类Meta中有model的定义表
         # 原始保存方式是models.Employee.objects.create(field1=value1,field2=value2,...)
-        print(form.cleaned_data)
-        form.save()
+        employee = form.save(commit=False)
+        employee.password = make_password(None)
+        employee.save()
         return redirect("/usr/lst/")
     # 校验失败，在页面上显示错误信息
     # 此时的form实例里面有了用户提交的未通过校验的数据，在前端中展示
@@ -85,8 +86,6 @@ def usr_edit(req, nid):
     if form.is_valid():
         # 默认保存用户输入的所有数据，如果要将某字段改成其他值可以如下：
         # form.instance.field_name=value
-        employee = form.save(commit=False)
-        employee.password = make_password(None)
         form.save()
         return redirect("/usr/lst/")
     return render(req, "usr_edit.html", {"form": form, "title": "编辑用户"})
