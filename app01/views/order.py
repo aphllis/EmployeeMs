@@ -1,80 +1,97 @@
 import json
+from copy import copy
 from random import randint
 from datetime import date
-from django.shortcuts import render, HttpResponse, redirect
-from django.views.decorators.csrf import csrf_exempt
-from django.http import JsonResponse
-from app01 import models
-from app01.utils.form import BootstrapModelForm
-from app01.utils.pagination import Pagination
-from copy import copy
 
-oid = date.today().strftime("%Y-%M-%D") + str(randint(1000, 9999))
-print(oid)
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
+
+from app01 import models
+from app01.utils.pagination import Pagination
+from app01.utils.form import BootstrapModelForm
+from app01.utils.permission import account_permission,get_current_account
+
+# oid = date.today().strftime("%Y-%M-%D") + str(randint(1000, 9999))
 
 
 class OrderForm(BootstrapModelForm):
     class Meta:
         model = models.Order
         fields = "__all__"
-        # 排除admin和oid字段，两者在后端获取
-        exclude = ['oid', 'admin']
+        # 排除字段,后端获取
+        exclude = ["oid", "admin", "created_by"]
 
-
+@account_permission("app01.view_order")
 def order_lst(req):
     form = OrderForm()
-    queryset = models.Order.objects.all().order_by('-id')
+    queryset = models.Order.objects.all().order_by("-id")
     # 如果查询为空则直接渲染网页
-    if not queryset: return render(req, 'order_lst.html', {'form': form})
+    if not queryset:
+        return render(req, "order_lst.html", {"form": form})
     page_obj = Pagination(request=req, queryset=queryset)
     context = {
-        'form': form,
-        'queryset': page_obj.page_queryset,
-        'page_str': page_obj.html()[0],
-        'goto_page_str': page_obj.html()[1],
-        'goto_page': page_obj.goto_page
+        "form": form,
+        "queryset": page_obj.page_queryset,
+        "page_str": page_obj.html()[0],
+        "goto_page_str": page_obj.html()[1],
+        "goto_page": page_obj.goto_page,
     }
-    return render(req, 'order_lst.html', context)
+    return render(req, "order_lst.html", context)
 
-
-@csrf_exempt
+@require_POST
+@account_permission("app01.change_order")
 def order_change(req):
-    """ 新建订单（Ajax请求） """
+    """新建订单（Ajax请求）"""
+    account=get_current_account(req)
+    if not account or not account.is_active:
+        return JsonResponse(
+            {"status":False,"error":"账号不存在或已禁用"},
+            status=403,
+        )
+    
     # 浅复制req.POST,便于修改query_dict 为mutable
-    query_dict = copy(req.POST)
+    query_dict = req.POST.copy()
+
+    edit_id=req.POST.get("edit_id")
 
     # 获得edit_id的对应值为数组，数组的元素值为前端发来的edit_id对应值
-    edit_flag = query_dict.pop("edit_id", None)
+    query_dict.pop("edit_id", None)
 
-    #判断数组元素值即edit_id对应值是否为空，如果为空，则以新建模式保存到数据库，否则以编辑模式保存到数据库
-    if not edit_flag[0]:
-        form = OrderForm(data=query_dict)
-        # print(form,type(form))
-        if form.is_valid():
-            # 生成订单号，不需要用户输入提交
-            form.instance.oid = date.today().strftime("%Y%m%d") + str(randint(1000, 9999))
-
-            # 获取当前登录用户名
-            form.instance.admin_id = req.session['info']['id']
-
-            # 保存到数据库
-            form.save()
-
-            # 设置返回数据
-            data_dict = {'status': True}
-            return HttpResponse(json.dumps(data_dict))
+    # 判断数组元素值即edit_id对应值是否为空，如果为空，则以新建模式保存到数据库，否则以编辑模式保存到数据库
+    if edit_id:
+        if not account.has_perm("appo1.change_order"):
+            return JsonResponse(
+                {"status":False,"error":"无工单修改权限"},
+                status=403,
+            )
+        row_obj=get_object_or_404(models.Order,pk=edit_id)
+        form=OrderForm(data=query_dict,isinstance=row_obj)
     else:
-        row_obj = models.Order.objects.filter(id=edit_flag[0]).first()
-        form = OrderForm(data=query_dict, instance=row_obj)
-        if form.is_valid():
-            form.save()
-            return JsonResponse({"status": True})
-    data_dict = {'status': False, 'errors': form.errors}
-    return HttpResponse(json.dumps(data_dict))
+        if not account.has_perm("app01.add_order"):
+            return JsonResponse(
+                {"status":False,"error":"无工单新增权限"},
+                status=403,
+            )
+        form=OrderForm(data=query_dict)
+    if form.is_valid():
+        order=form.save(commit=False)
+        if not edit_id:
+            order.oid=date.today().strftime("%Y%m%d")+str(randint(1000,9999))
+            order.created_by=account
 
+        order.save()
+        return JsonResponse({"status":True})
+    return JsonResponse(
+        {"status":False,"error":form.errors},
+        status=400,
+    )
 
+@require_POST
+@account_permission("app01.delete_order")
 def order_del(req):
-    uid = req.GET.get("uid")
+    uid = req.POST.get("uid")
     exist = models.Order.objects.filter(id=uid).exists()
     if not exist:
         return JsonResponse({"status": False, "error": "数据不存在"})
@@ -82,6 +99,7 @@ def order_del(req):
     return JsonResponse({"status": True})
 
 
+@account_permission("app01.view_order")
 def order_detail(req):
     # queryset=[obj,obj,obj] 对象数组
     # queryset=models.Order.objects.all()
@@ -92,7 +110,9 @@ def order_detail(req):
 
     uid = req.GET.get("uid")
     print(req.GET)
-    row_obj = models.Order.objects.filter(id=uid).values("title", "price", "status").first()
+    row_obj = (
+        models.Order.objects.filter(id=uid).values("title", "price", "status").first()
+    )
     if not row_obj:
         return JsonResponse({"status": False, "error": "订单不存在"})
     return JsonResponse({"status": True, "data": row_obj})
