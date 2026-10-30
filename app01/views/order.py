@@ -61,13 +61,13 @@ def order_change(req):
 
     # 判断数组元素值即edit_id对应值是否为空，如果为空，则以新建模式保存到数据库，否则以编辑模式保存到数据库
     if edit_id:
-        if not account.has_perm("appo1.change_order"):
+        if not account.has_perm("app01.change_order"):
             return JsonResponse(
                 {"status":False,"error":"无工单修改权限"},
                 status=403,
             )
         row_obj=get_object_or_404(models.Order,pk=edit_id)
-        form=OrderForm(data=query_dict,isinstance=row_obj)
+        form=OrderForm(data=query_dict,instance=row_obj)
     else:
         if not account.has_perm("app01.add_order"):
             return JsonResponse(
