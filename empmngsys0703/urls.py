@@ -16,19 +16,28 @@ Including another URLconf
 """
 
 from django.contrib import admin
-from django.urls import path, re_path,include
+from django.urls import path, re_path, include
 from django.views.static import serve
 from django.conf import settings
 
 from rest_framework.routers import DefaultRouter
-from app01.views.api_views import EmployeeViewSet,DepartmentViewSet
+from app01.views.api_views import EmployeeViewSet, DepartmentViewSet
 
-from app01.views import department, tel, usr, admin, login, task, order, chart, upload,profile
+from app01.views import (
+    department,
+    usr,
+    admin,
+    login,
+    task,
+    order,
+    chart,
+    profile,
+)
 from app01.api import department_api, employee_api
 
-router=DefaultRouter()
-router.register(r"employees",EmployeeViewSet)
-router.register(r"departments",DepartmentViewSet)
+router = DefaultRouter()
+router.register(r"employees", EmployeeViewSet)
+router.register(r"departments", DepartmentViewSet)
 
 urlpatterns = [
     # RESTFUL API django原生实现
@@ -43,8 +52,7 @@ urlpatterns = [
         name="media",
     ),
     # RESTFUL API DRF实现
-    path("api/v2/",include(router.urls)),
-
+    path("api/v2/", include(router.urls)),
     # 部门管理
     path("department/lst/", department.department_lst),
     path("department/add/", department.department_add),
@@ -58,11 +66,6 @@ urlpatterns = [
     path("usr/modelform/add/", usr.usr_modelform_add),
     path("usr/<int:nid>/edit/", usr.usr_edit),
     path("usr/<int:nid>/del/", usr.usr_del),
-    # 靓号管理
-    path("tel/lst/", tel.tel_lst),
-    path("tel/add/", tel.tel_add),
-    path("tel/<int:nid>/edit/", tel.tel_edit),
-    path("tel/<int:nid>/del/", tel.tel_del),
     # 管理员
     path("admin/lst/", admin.admin_lst),
     path("admin/add/", admin.admin_add),
@@ -70,7 +73,6 @@ urlpatterns = [
     path("admin/<int:nid>/del/", admin.admin_del),
     path("admin/<int:nid>/reset/", admin.admin_reset),
     path("admin/<int:nid>/role/", admin.admin_role),
-
     # 登录
     path("login/", login.login_ds),
     path("logout/", login.logout_ds),
@@ -82,7 +84,7 @@ urlpatterns = [
     path("task/del/", task.task_del),
     path("task/detail/", task.task_detail),
     path("task/edit/", task.task_edit),
-    # 订单
+    # 工单
     path("order/lst/", order.order_lst),
     path("order/change/", order.order_change),
     path("order/del/", order.order_del),
@@ -92,13 +94,8 @@ urlpatterns = [
     path("chart/bar/", chart.chart_bar),
     path("chart/pie/", chart.chart_pie),
     path("chart/line/", chart.chart_line),
-    # 文件上传
-    path("upload/lst/", upload.upload_lst),
-    path("upload/multi/", upload.upload_multi),
-    path("upload/form/", upload.upload_form),
-
-    #个人中心
-    path("profile/",profile.profile),
-    path("profile/password/",profile.change_password)
-    
+    # 个人中心
+    path("profile/", profile.profile),
+    path("profile/password/", profile.change_password),
+    path("profile/avatar/", profile.change_avatar),
 ]

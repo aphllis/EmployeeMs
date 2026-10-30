@@ -111,29 +111,6 @@ class Employee(models.Model):
     )
     # django的约束
 
-
-
-class Telenumber(models.Model):
-    """靓号表"""
-
-    mobile = models.CharField(verbose_name="号码", max_length=11, unique=True)
-    # 允许为空，null=True,blank=True
-    price = models.IntegerField(verbose_name="售价")
-    level_choices = (
-        (1, "一级"),
-        (2, "二级"),
-        (3, "三级"),
-        (4, "四级"),
-    )
-    level = models.SmallIntegerField(
-        verbose_name="等级", choices=level_choices, default=1
-    )
-    status_choices = ((1, "已占用"), (2, "未占用"))
-    status = models.SmallIntegerField(
-        verbose_name="状态", choices=status_choices, default=2
-    )
-
-
 class TaskManage(models.Model):
     """任务管理表"""
 
@@ -223,7 +200,8 @@ class ProfileInfo(models.Model):
         verbose_name="所属部门",
     )
     position = models.CharField(verbose_name="职位", max_length=32, blank=True)
-    avatar = models.CharField(verbose_name="头像", max_length=128, blank=True)
+    # avatar = models.CharField(verbose_name="头像", max_length=128, blank=True)
+    avatar = models.ImageField(verbose_name="头像",upload_to="avatars/",max_length=255,blank=True)
 
     age = models.IntegerField(verbose_name="年龄", null=True, blank=True)
     gender_choices = ((1, "男"), (2, "女"))

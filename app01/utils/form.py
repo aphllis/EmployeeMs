@@ -1,6 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
-from django.core.validators import RegexValidator
+# from django.core.validators import RegexValidator
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 
@@ -36,8 +36,7 @@ class UserModelForm(BootstrapModelForm):
         #     'name':forms.TextInput(attrs={'class':'form-control mb-3'}),
         #     'password':forms.PasswordInput(attrs={'class':'form-control mb-3'})
         # }
-
-
+        
 # 利用源码循环添加样式功能已封装入BootstrapModelForm中
 # def __init__(self, *args, **kwargs):
 #     super().__init__(*args, **kwargs)
@@ -47,41 +46,6 @@ class UserModelForm(BootstrapModelForm):
 #             fld.widget.attrs['PlaceHolder']=fld.label
 #         else:
 #             fld.widget.attrs = {'class': 'form-control mb-3', 'PlaceHolder': fld.label}
-
-
-class TelModelForm(BootstrapModelForm):
-    # 验证方式一：
-    # 给手机号添加正则校验
-    mobile = forms.CharField(
-        label="手机号", validators=[RegexValidator(r"^1\d{10}$", "手机号格式错误")]
-    )
-
-    class Meta:
-        model = models.Telenumber
-        fields = ["mobile", "price", "level", "status"]
-        # fields='__all__' 代表所有字段
-        # exclude=['field_1'] 代表排除某个字段
-
-    # 验证方式二(钩子方法)：
-    # cleaned_data是一个字典，保存所有了类实例的表单键值，在视图函数中执行form.save()时，如果有钩子方法会调用它，然后将返回值更新到对应键，然后保存到数据库
-    # 定义clean_field_name函数，是定义钩子方法，最后要返回对应键的值
-    def clean_mobile(self):
-        txt_mobile = self.cleaned_data["mobile"]
-        # 针对添加时，手机号重复问题的校验有两个方式
-        # 方式一:直接在models里面在创建表结构类时，在mobile字段定义里面添加参数unique=True
-        # 方式二:在views视图函数中，创建ModelForm类时在钩子方法中通过查询对应mobile判断是否存在，已存在则抛出对应错误
-        # exists=models.Telenumber.objects.filter(mobile=txt_mobile).exists()
-        # if exists:
-        #     raise ValidationError('手机号已存在')
-        # 如果校验不通过，抛出错误信息
-        if len(txt_mobile) != 11:
-            raise ValidationError("格式错误")
-        # 否则直接返回值
-        return txt_mobile
-        # 方式二的注意点在于，对于编辑手机号方法而言，不能直接这样使用，否则如果要修改其他而保留手机号时会报手机号已存在错误
-        # 解决方式二对于编辑手机方法存在的问题，可以通过排除自己以外判断是否存在重复的号码，代码为：(self.instance.pk 就是行对象的id值)
-        # exists=models.Telenumber.objects.exclude(id=self.instance.pk).filter(mobile=txt_mobile).exists()
-
 
 class AdminModelForm(BootstrapModelForm):
     confirm_password = forms.CharField(
@@ -381,3 +345,6 @@ class AccountRoleForm(forms.ModelForm):
         if other_superadmin_count == 0:
             raise ValidationError("系统至少需要保留一个 SuperAdmin")
         return groups
+
+class AvatarUploadForm(BootstrapForm):
+    avatar=forms.ImageField(label="头像")

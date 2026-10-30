@@ -16,6 +16,19 @@
                     {% else %}
                     <i class="bi bi-person-circle"></i>
                     {% endif %}
+                    <form method="post" enctype="multipart/form-data" action="/profile/avatar/">
+                        {% csrf_token %}
+                        {{ avatar_form.avatar }}
+                        {{ avatar_form.avatar.errors }}
+                        <button class="btn btn-primary btn-sm" type="submit">
+                            上传或替换头像
+                        </button>
+                        {% if messages %}
+                        {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+                        {% endfor %}
+                        {% endif %}
+                    </form>
                 </div>
                 <div class="col-md-9">
                     <form method="post">
@@ -121,25 +134,25 @@
     document.getElementById("confirm-password")
         .addEventListener("click", function () {
             const form = document.getElementById("password-form");
-            const formData=new FormData(form);
+            const formData = new FormData(form);
 
-            fetch("/profile/password/",{
-                method:"POST",
-                body:formData
+            fetch("/profile/password/", {
+                method: "POST",
+                body: formData
             })
-            .then(response =>response.json())
-            .then(data =>{
-                if (!data.success){
-                    document.getElementById("password-error")
-                    .textContent=data.errors||data.error||"密码修改失败";
-                    return ;
-                }
-                alert("密码修改成功");
-                const modalElement=document.getElementById("passwordModal");
-                const modal=bootstrap.Modal.getInstance(modalElement);
-                modal.hide();
-                form.reset();
-            });
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        document.getElementById("password-error")
+                            .textContent = data.errors || data.error || "密码修改失败";
+                        return;
+                    }
+                    alert("密码修改成功");
+                    const modalElement = document.getElementById("passwordModal");
+                    const modal = bootstrap.Modal.getInstance(modalElement);
+                    modal.hide();
+                    form.reset();
+                });
         });
 </script>
 {% endblock %}

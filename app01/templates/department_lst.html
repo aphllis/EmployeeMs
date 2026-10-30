@@ -21,24 +21,24 @@
             <div></div>
             <table class="table table-bordered mb-0 text-center">
                 <thead>
-                <tr>
-                    <th scope="col">Id</th>
-                    <th scope="col">名称</th>
-                    <th scope="col">操作</th>
-                </tr>
+                    <tr>
+                        <th scope="col">Id</th>
+                        <th scope="col">名称</th>
+                        <th scope="col">操作</th>
+                    </tr>
                 </thead>
                 <tbody>
-                {% for obj in queryset %}
-                <tr>
-                    <!--                    <th scope="row">{{ obj.id}}</th>-->
-                    <th scope="row">{{ start_index|add:forloop.counter }}</th>
-                    <td>{{obj.title}}</td>
-                    <td>
-                        <a class="btn btn-primary btn-sm" href="/department/edit/?nid={{ obj.id}}">编辑</a>
-                        <!-- <a class="btn btn-danger btn-sm" href="/department/del/?nid={{ obj.id}}">删除</a> -->
-                    </td>
-                </tr>
-                {% endfor %}
+                    {% for obj in queryset %}
+                    <tr>
+                        <!--                    <th scope="row">{{ obj.id}}</th>-->
+                        <th scope="row">{{ start_index|add:forloop.counter }}</th>
+                        <td>{{obj.title}}</td>
+                        <td>
+                            <a class="btn btn-primary btn-sm" href="/department/edit/?nid={{ obj.id}}">编辑</a>
+                            <!-- <a class="btn btn-danger btn-sm" href="/department/del/?nid={{ obj.id}}">删除</a> -->
+                        </td>
+                    </tr>
+                    {% endfor %}
                 </tbody>
             </table>
         </div>
@@ -56,12 +56,13 @@
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header pb-1 pt-1">
-                <h4 class="modal-title fs-5" id="ModalLabel">上传文件</h4>
-                <div class="d-flex justify-content-end w-75">
+                <h5 class="modal-title fs-5" id="ModalLabel">上传文件</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                <!-- <div class="d-flex justify-content-end w-75">
                     <h2 type="button" data-bs-dismiss="modal">
                         <i class="bi bi-x" style="color: red;"></i>
                     </h2>
-                </div>
+                </div> -->
             </div>
             <div class="modal-body">
                 <input type="file" name="excel_file" id="excel_file">
