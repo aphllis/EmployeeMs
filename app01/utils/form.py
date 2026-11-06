@@ -18,7 +18,7 @@ class DepartModelForm(BootstrapModelForm):
 
 
 class UserModelForm(BootstrapModelForm):
-    name = forms.CharField(min_length=2, label="用户名")
+    name = forms.CharField(min_length=2, label="姓名")
 
     class Meta:
         model = models.Employee
@@ -348,3 +348,37 @@ class AccountRoleForm(forms.ModelForm):
 
 class AvatarUploadForm(BootstrapForm):
     avatar=forms.ImageField(label="头像")
+
+
+
+class EmployeeCreateForm(UserModelForm):
+    account_username=forms.CharField(
+        label="登录用户名",
+        max_length=32,
+    )
+    initial_password=forms.CharField(
+        label="初始密码",
+        widget=forms.PasswordInput,
+        strip=False,
+    )
+    confirm_password=forms.CharField(
+        label="确认初始密码",
+        widget=forms.PasswordInput,
+        strip=False
+    )
+
+    def clean_account_username(self):
+        username=self.cleaned_data["account_username"].strip()
+        if models.Account.objects.filter(username__iexact=username).exists():
+            raise ValidationError("登录用户名已存在")
+        return username
+    
+    # 跨字段校验
+    def clean(self):
+        cleaned_data=super().clean()
+        password=cleaned_data.get("initial_password")
+        confirm_password=cleaned_data.get("confirm_password")
+
+        if password and confirm_password and password!=confirm_password:
+            self.add_error("confirm_password","两次输入密码不一致")
+        return cleaned_data

@@ -1,6 +1,7 @@
 # from tkinter.constants import CASCADE
 
 from django.db import models
+from decimal import Decimal
 
 # from django.db.models import SET_NULL
 from django.contrib.auth.models import Group
@@ -77,7 +78,6 @@ class Employee(models.Model):
     employee_no = models.CharField(
         verbose_name="工号", max_length=32, unique=True, null=True, blank=True
     )
-    password = models.CharField(verbose_name="旧密码字段", max_length=128)
     age = models.IntegerField(verbose_name="年龄", null=True, blank=True)
     gender_choices = ((1, "男"), (2, "女"))
     gender = models.SmallIntegerField(
@@ -131,7 +131,7 @@ class Order(models.Model):
     oid = models.CharField(verbose_name="工单号", max_length=64, unique=True)
     title = models.CharField(verbose_name="事项名称", max_length=64)
     price = models.DecimalField(
-        verbose_name="金额", max_digits=12, decimal_places=2, default=0
+        verbose_name="金额", max_digits=12, decimal_places=2, default=Decimal('0')
     )
     type_choices = (
         (1, "项目报价"),

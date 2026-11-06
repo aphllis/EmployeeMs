@@ -26,7 +26,13 @@ def admin_lst(req):
     if search_data:
         data_dict["username__contains"] = search_data
 
-    queryset = models.Account.objects.filter(**data_dict).order_by("id")
+    queryset = (
+    models.Account.objects
+    .select_related("employee")
+    .prefetch_related("groups")
+    .filter(**data_dict)
+    .order_by("id")
+)
     query_obj = Pagination(request=req, queryset=queryset)
 
     # 一般是通过request.user.has_perm(...)判断授权情况，但是因为account是自定义的，不是django的user，
