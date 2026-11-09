@@ -25,7 +25,7 @@ class Command(BaseCommand):
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
             ],
-            "RegluarEmployee":[
+            "RegularEmployee":[
                 (models.Department,["view"]),
                 (models.Position,["view"])
             ],

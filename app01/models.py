@@ -125,7 +125,7 @@ class TaskManage(models.Model):
     )
     class Meta:
         permissions=[
-            ("view_own_taskmanager","Can view tasks assigned to the current employee"),
+            ("view_own_taskmanage","Can view tasks assigned to the current employee"),
         ]
 
 
