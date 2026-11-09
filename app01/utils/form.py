@@ -361,7 +361,7 @@ class AccountRoleForm(forms.ModelForm):
     def save(self, commit=True):
         account = super().save(commit)
         if account.employee_id:
-            regular_employee_group=Group.objects.get(name="RegularEmployy")
+            regular_employee_group=Group.objects.get(name="RegularEmployee")
             account.groups.add(regular_employee_group)
         return account
 
