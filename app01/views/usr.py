@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.contrib.auth.models import Group
 
 from app01 import models
 from app01.utils.pagination import Pagination
@@ -63,15 +64,15 @@ def usr_modelform_add(req):
     if form.is_valid():
         # 事务原子操作，确保员工和账号一起成功或者回滚
         with transaction.atomic():
-            employee=form.save(commit=False)
-            employee.save()
-
-            models.Account.objects.create(
+            employee=form.save()
+            account=models.Account.objects.create(
                 username=form.cleaned_data["account_username"],
                 password=make_password(form.cleaned_data["initial_password"]),
                 employee=employee,
                 is_active=True
             )
+            regular_employee_group=Group.objects.get(name="RegularEmployee")
+            account.groups.add(regular_employee_group)
         return redirect("/usr/lst/")
 
     # 如果数据合法，调用form.save()将自动保存数据到数据库表中，哪个表？上面的UserModelForm类中的嵌套类Meta中有model的定义表

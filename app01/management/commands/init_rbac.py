@@ -25,6 +25,10 @@ class Command(BaseCommand):
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
             ],
+            "RegluarEmployee":[
+                (models.Department,["view"]),
+                (models.Position,["view"])
+            ],
             # 暂时保留旧组，清掉它的通用读取权限。
             # 后续应按具体业务范围给只读用户授权。
             "ReadOnly": [],
@@ -33,9 +37,12 @@ class Command(BaseCommand):
         # 只有 SuperAdmin 可以分配角色和强制重置密码。
         role_custom_permissions = {
             "SuperAdmin": [
-                "manage_account_roles",
-                "reset_account_password",
+                (models.Account,"manage_account_roles"),
+                (models.Account,"reset_account_password"),
             ],
+            "RegularEmployee":[
+                (models.TaskManage,"view_own_taskmanage"),
+            ]
         }
 
         for group_name, model_rules in role_model_permissions.items():
@@ -53,9 +60,8 @@ class Command(BaseCommand):
                     )
                     permissions.append(permission)
 
-            content_type = ContentType.objects.get_for_model(models.Account)
-
-            for codename in role_custom_permissions.get(group_name, []):
+            for model,codename in role_custom_permissions.get(group_name, []):
+                content_type = ContentType.objects.get_for_model(model)
                 permission = Permission.objects.get(
                     content_type=content_type,
                     codename=codename,

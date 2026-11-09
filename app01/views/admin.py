@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect, HttpResponse
+from django.shortcuts import render
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.contrib.auth.models import Group
@@ -6,7 +6,6 @@ from django.contrib.auth.models import Group
 from app01 import models
 from app01.utils.pagination import Pagination
 from app01.utils.form import (
-    AccountModelForm,
     AccountResetModelForm,
     AccountRoleForm,
 )
@@ -14,7 +13,7 @@ from app01.utils.form import (
 from app01.utils.permission import (
     account_permission,
     get_current_account,
-    can_delete_target_account,
+    # can_delete_target_account,
     can_edit_target_account,
 )
 
@@ -42,7 +41,7 @@ def admin_lst(req):
     # 当前管理员的全局权限
     can_add_account = current_account.has_perm("app01.add_account")
     can_change_account = current_account.has_perm("app01.change_account")
-    can_delete_account = current_account.has_perm("app01.delete_account")
+    # can_delete_account = current_account.has_perm("app01.delete_account")
     can_manage_account_roles = current_account.has_perm("app01.manage_account_roles")
     can_reset_account_password = current_account.has_perm("app01.reset_account_password")
 
@@ -55,20 +54,20 @@ def admin_lst(req):
             obj.manage_roles_disabled_reason = "无角色权限"
 
         # 删除权限
-        if not can_delete_account:
-            obj.can_delete = False
-            obj.delete_disabled_reason = "无删除权限"
+        # if not can_delete_account:
+        #     obj.can_delete = False
+        #     obj.delete_disabled_reason = "无删除权限"
 
-        elif can_delete_target_account(current_account, obj):
-            obj.can_delete = True
-            obj.delete_disabled_reason = ""
+        # elif can_delete_target_account(current_account, obj):
+        #     obj.can_delete = True
+        #     obj.delete_disabled_reason = ""
 
-        else:
-            obj.can_delete = False
-            if obj.id == current_account.id:
-                obj.delete_disabled_reason = "无法自删"
-            else:
-                obj.delete_disabled_reason = "无删除权限"
+        # else:
+        #     obj.can_delete = False
+        #     if obj.id == current_account.id:
+        #         obj.delete_disabled_reason = "无法自删"
+        #     else:
+        #         obj.delete_disabled_reason = "无删除权限"
     # 传给模版
     context = {
         "queryset": query_obj.page_queryset,
@@ -79,40 +78,40 @@ def admin_lst(req):
         # RBAC
         "can_add_account": can_add_account,
         "can_change_account": can_change_account,
-        "can_delete_account": can_delete_account,
+        # "can_delete_account": can_delete_account,
         "can_manage_account_roles": can_manage_account_roles,
         "can_reset_account_password": can_reset_account_password,
         # 角色列表
-        "role_choices": list(Group.objects.values("id", "name")),
+        "role_choices": list(Group.objects.exclude(name="RegularEmployee").values("id", "name")),
     }
     return render(req, "admin_lst.html", context)
 
 
-@account_permission("app01.add_account")
-def admin_add(req):
-    if req.method == "GET":
-        form = AccountModelForm()
-        return render(req, "change.html", {"form": form, "title": "添加管理员"})
-    form = AccountModelForm(data=req.POST)
-    if form.is_valid():
-        form.save()
-        return redirect("/admin/lst/")
-    context = {"form": form, "title": "添加管理员"}
-    return render(req, "change.html", context)
+# @account_permission("app01.add_account")
+# def admin_add(req):
+#     if req.method == "GET":
+#         form = AccountModelForm()
+#         return render(req, "change.html", {"form": form, "title": "添加管理员"})
+#     form = AccountModelForm(data=req.POST)
+#     if form.is_valid():
+#         form.save()
+#         return redirect("/admin/lst/")
+#     context = {"form": form, "title": "添加管理员"}
+#     return render(req, "change.html", context)
 
-@require_POST
-@account_permission("app01.delete_account")
-def admin_del(req, nid):
-    # 禁止删除当前用户控制
-    current_account = get_current_account(req)
-    target_account = models.Account.objects.filter(id=nid).first()
+# @require_POST
+# @account_permission("app01.delete_account")
+# def admin_del(req, nid):
+#     # 禁止删除当前用户控制
+#     current_account = get_current_account(req)
+#     target_account = models.Account.objects.filter(id=nid).first()
 
-    if not target_account:
-        return HttpResponse("账号不存在", status=403)
-    if not can_delete_target_account(current_account, target_account):
-        return HttpResponse("无删除权限", status=403)
-    target_account.delete()
-    return redirect("/admin/lst/")
+#     if not target_account:
+#         return HttpResponse("账号不存在", status=403)
+#     if not can_delete_target_account(current_account, target_account):
+#         return HttpResponse("无删除权限", status=403)
+#     target_account.delete()
+#     return redirect("/admin/lst/")
 
 
 @require_POST

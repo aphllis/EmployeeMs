@@ -1,5 +1,6 @@
 from django import forms
 from django.core.exceptions import ValidationError
+
 # from django.core.validators import RegexValidator
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
@@ -36,7 +37,8 @@ class UserModelForm(BootstrapModelForm):
         #     'name':forms.TextInput(attrs={'class':'form-control mb-3'}),
         #     'password':forms.PasswordInput(attrs={'class':'form-control mb-3'})
         # }
-        
+
+
 # 利用源码循环添加样式功能已封装入BootstrapModelForm中
 # def __init__(self, *args, **kwargs):
 #     super().__init__(*args, **kwargs)
@@ -46,6 +48,7 @@ class UserModelForm(BootstrapModelForm):
 #             fld.widget.attrs['PlaceHolder']=fld.label
 #         else:
 #             fld.widget.attrs = {'class': 'form-control mb-3', 'PlaceHolder': fld.label}
+
 
 class AdminModelForm(BootstrapModelForm):
     confirm_password = forms.CharField(
@@ -290,6 +293,8 @@ class AccountModelForm(BootstrapModelForm):
         if commit:
             obj.save()
         return obj
+
+
 class AccountResetModelForm(BootstrapModelForm):
     password = forms.CharField(
         label="新密码",
@@ -338,47 +343,58 @@ class AccountRoleForm(forms.ModelForm):
         if groups is None or groups.filter(name="SuperAdmin").exists():
             return groups
 
-        other_superadmin_count = models.Account.objects.filter(
-            groups__name="SuperAdmin"
-        ).exclude(pk=self.instance.pk).distinct().count()
+        other_superadmin_count = (
+            models.Account.objects.filter(groups__name="SuperAdmin")
+            .exclude(pk=self.instance.pk)
+            .distinct()
+            .count()
+        )
 
         if other_superadmin_count == 0:
             raise ValidationError("系统至少需要保留一个 SuperAdmin")
         return groups
 
-class AvatarUploadForm(BootstrapForm):
-    avatar=forms.ImageField(label="头像")
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["groups"].queryset = Group.objects.exclude(name="RegularEmployee")
 
+    def save(self, commit=True):
+        account = super().save(commit)
+        if account.employee_id:
+            regular_employee_group=Group.objects.get(name="RegularEmployy")
+            account.groups.add(regular_employee_group)
+        return account
+
+class AvatarUploadForm(BootstrapForm):
+    avatar = forms.ImageField(label="头像")
 
 
 class EmployeeCreateForm(UserModelForm):
-    account_username=forms.CharField(
+    account_username = forms.CharField(
         label="登录用户名",
         max_length=32,
     )
-    initial_password=forms.CharField(
+    initial_password = forms.CharField(
         label="初始密码",
         widget=forms.PasswordInput,
         strip=False,
     )
-    confirm_password=forms.CharField(
-        label="确认初始密码",
-        widget=forms.PasswordInput,
-        strip=False
+    confirm_password = forms.CharField(
+        label="确认初始密码", widget=forms.PasswordInput, strip=False
     )
 
     def clean_account_username(self):
-        username=self.cleaned_data["account_username"].strip()
+        username = self.cleaned_data["account_username"].strip()
         if models.Account.objects.filter(username__iexact=username).exists():
             raise ValidationError("登录用户名已存在")
         return username
-    
+
     # 跨字段校验
     def clean(self):
-        cleaned_data=super().clean()
-        password=cleaned_data.get("initial_password")
-        confirm_password=cleaned_data.get("confirm_password")
+        cleaned_data = super().clean()
+        password = cleaned_data.get("initial_password")
+        confirm_password = cleaned_data.get("confirm_password")
 
-        if password and confirm_password and password!=confirm_password:
-            self.add_error("confirm_password","两次输入密码不一致")
+        if password and confirm_password and password != confirm_password:
+            self.add_error("confirm_password", "两次输入密码不一致")
         return cleaned_data

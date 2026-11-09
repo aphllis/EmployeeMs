@@ -68,9 +68,9 @@ urlpatterns = [
     path("usr/<int:nid>/del/", usr.usr_del),
     # 管理员
     path("admin/lst/", admin.admin_lst),
-    path("admin/add/", admin.admin_add),
+    # path("admin/add/", admin.admin_add),
     path("admin/<int:nid>/status/", admin.admin_status),
-    path("admin/<int:nid>/del/", admin.admin_del),
+    # path("admin/<int:nid>/del/", admin.admin_del),
     path("admin/<int:nid>/reset/", admin.admin_reset),
     path("admin/<int:nid>/role/", admin.admin_role),
     # 登录

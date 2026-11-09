@@ -2,6 +2,7 @@ from functools import wraps
 from django.http import HttpResponse
 from app01 import models
 
+
 def get_current_account(request):
     account_id = request.session.get("info", {}).get("account_id")
     if not account_id:
@@ -34,6 +35,22 @@ def account_permission(permission_name):
             if not account or not account.is_active:
                 return HttpResponse("账号不存在或已禁用", status=403)
             if not account.has_perm(permission_name):
+                return HttpResponse("无权限", status=403)
+            return view_func(request, *args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+def account_permission_any(*permission_names):
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            account = get_current_account(request)
+            if not account or not account.is_active:
+                return HttpResponse("账号不存在或已禁用", status=403)
+            if not any(account.has_perm(name) for name in permission_names):
                 return HttpResponse("无权限", status=403)
             return view_func(request, *args, **kwargs)
 

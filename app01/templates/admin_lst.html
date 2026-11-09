@@ -28,6 +28,7 @@
                 <tr>
                     <th scope="col">Id</th>
                     <th scope="col">用户名</th>
+                    <th scope="col">关联员工</th>
                     <th scope="col">角色</th>
                     <th scope="col">状态</th>
                     <th scope="col">操作</th>
@@ -38,6 +39,13 @@
                 <tr>
                     <th scope="row">{{obj.id}}</th>
                     <td>{{obj.username}}</td>
+                    <td>
+                        {% if obj.employee %}
+                        {{ obj.employee.employee_no }} {{ obj.employee.name }}
+                        {% else %}
+                        <span class="text-muted">未关联员工</span>
+                        {% endif %}
+                    </td>
                     <td>
                         {% for group in obj.groups.all %}
                         <span class="badge text-bg-primary">
@@ -67,8 +75,8 @@
                         <button type="button" class="btn btn-warning btn-sm reset-password-btn" data-id="{{obj.id}}"
                             data-username="{{obj.username}}">重置</button>
                         {% endif %}
-                        
-                        {% if obj.can_delete %}
+
+                        <!-- {% if obj.can_delete %}
                         <form action="/admin/{{obj.id}}/del/" method="post" style="display: inline-block;">
                             {% csrf_token %}
                             <button class="btn btn-danger btn-sm">删除</button>
@@ -77,7 +85,7 @@
                         <span data-bs-toggle="tooltip" title="{{ obj.delete_disabled_reason}}">
                             <button type="button" class="btn btn-danger btn-sm" disabled>删除</button>
                         </span>
-                        {% endif %}
+                        {% endif %} -->
                     </td>
                 </tr>
                 {% endfor %}
@@ -167,13 +175,21 @@
                 },
                 body: `is_active=${newStatus}`,
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.success) {
+                .then(async response => {
+                    const contentType = response.headers.get("content-type") || "";
+                    const data = contentType.includes("application/json")
+                        ? await response.json()
+                        : { error: await response.text() };
+
+                    if (!response.ok || data.success !== true) {
                         alert(data.error || "状态修改失败");
                         return;
                     }
+
                     location.reload();
+                })
+                .catch(() => {
+                    alert("请求失败，请稍后重试");
                 });
         });
     });

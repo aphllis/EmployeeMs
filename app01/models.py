@@ -123,6 +123,10 @@ class TaskManage(models.Model):
     executor = models.ForeignKey(
         verbose_name="执行者", to=Employee, to_field="id", on_delete=models.CASCADE
     )
+    class Meta:
+        permissions=[
+            ("view_own_taskmanager","Can view tasks assigned to the current employee"),
+        ]
 
 
 class Order(models.Model):

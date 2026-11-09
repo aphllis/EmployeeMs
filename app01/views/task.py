@@ -9,13 +9,29 @@ from django.views.decorators.http import require_POST
 from app01 import models
 from app01.utils.form import TaskModelForm
 from app01.utils.pagination import Pagination
-from app01.utils.permission import account_permission
+from app01.utils.permission import account_permission,account_permission_any,get_current_account
+
+def visible_tasks_for(account):
+    queryset=models.TaskManage.objects.all()
+    # ProjectManager 等持有通用查看权限的账号可以查看全部任务。
+    if account.has_perm("app01.view_taskmanage"):
+        return queryset
+    
+    # ProjectManager 等持有通用查看权限的账号可以查看全部任务。
+    if account.has_perm("app01.view_own_taskmanage") and account.employee_id:
+        return queryset.filter(executor_id=account.employee_id)
+    return queryset.none()
 
 
-@account_permission("app01.view_taskmanage")
+@account_permission_any(
+    "app01.view_taskmanage",
+    "app01.view_own_taskmanage",
+)
 def task_lst(req):
-    queryset = models.TaskManage.objects.all().order_by("-id")
+    account=get_current_account(req)
+    queryset=visible_tasks_for(account).order_by("-id")
     form = TaskModelForm()
+    
     if not queryset:
         return render(req, "task_lst.html", {"form": form})
 
@@ -30,9 +46,6 @@ def task_lst(req):
     return render(req, "task_lst.html", context)
 
 
-# 免除post请求时的csrf_token获取
-# @csrf_exempt
-
 
 def task_ajax(req):
     print(req.GET)
@@ -42,7 +55,6 @@ def task_ajax(req):
     return HttpResponse(json_str)
 
 
-# @csrf_exempt
 @require_POST
 @account_permission("app01.add_taskmanage")
 def task_add(req):
@@ -72,20 +84,23 @@ def task_del(req):
     return JsonResponse({"status": True})
 
 
-@account_permission("app01.view_taskmanage")
+@account_permission_any(
+    "app01.view_taskmanage",
+    "app01.view_own_taskmanage",
+)
 def task_detail(req):
+    account=get_current_account(req)
     uid = req.GET.get("uid")
     row_obj = (
-        models.TaskManage.objects.filter(id=uid)
+        visible_tasks_for(account).filter(id=uid)
         .values("level", "title", "detail", "executor")
         .first()
     )
     if not row_obj:
-        return JsonResponse({"status": False, "error": "任务不存在"})
+        return JsonResponse({"status": False, "error": "任务不存在或无权限查看"})
     return JsonResponse({"status": True, "data": row_obj})
 
 
-# @csrf_exempt
 @require_POST
 @account_permission("app01.change_taskmanage")
 def task_edit(req):
@@ -99,7 +114,6 @@ def task_edit(req):
             status=400,
         )
     
-    # print("edit_id={}".format(edit_id))
     row_obj = models.TaskManage.objects.filter(id=edit_id).first()
     if not row_obj:
         return JsonResponse(
@@ -112,3 +126,4 @@ def task_edit(req):
         form.save()
         return JsonResponse({"status": True})
     return JsonResponse({"status": False, "errors": form.errors},status=400)
+
