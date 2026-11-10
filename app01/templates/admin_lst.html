@@ -66,7 +66,7 @@
                         {% endif %}
                     </td>
                     <td>
-                        {% if obj.can_manage_roles %}
+                        {% if obj.can_manage_account_roles %}
                         <button type="button" class="btn btn-info btn-sm role-btn" data-id="{{obj.id}}"
                             data-username="{{obj.username}}" data-roles="{{obj.current_role_ids|join:','}}">角色</button>
                         {% endif %}
@@ -148,7 +148,6 @@
 {{ role_choices|json_script:"role-data" }}
 {% endblock %}
 {% block js %}
-
 <script>
     /* 获取CSRF-TOKEN*/
     function getCookie(name) {

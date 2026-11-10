@@ -21,9 +21,11 @@
 <div>
     <div class="container" style="width: 80rem">
         <div class="card m-auto mb-3">
+            {% if can_add_task %}
             <div class="card-header align-items-centerr">
                 <i class="bi bi-list-ul"></i> 新建任务
             </div>
+            {% endif %}
             <div class="card-body ">
                 <form id="addForm" novalidate>
                     {% csrf_token %}
@@ -55,7 +57,9 @@
                         <th scope="col">任务名</th>
                         <th scope="col">详细信息</th>
                         <th scope="col">执行人</th>
+                        {% if can_change_task %}
                         <th scope="col">操作</th>
+                        {% endif %}
                     </tr>
                 </thead>
                 <tbody>
@@ -66,10 +70,12 @@
                         <td>{{obj.title}}</td>
                         <td>{{obj.detail}}</td>
                         <td>{{obj.executor.name}}</td>
+                        {% if can_change_task %}
                         <td>
                             <input uid="{{obj.id}}" type="button" class="btn btn-primary btn-sm btn-edit" value="编辑">
                             <!-- <input uid="{{obj.id}}" type="button" class="btn btn-sm btn-danger btn-del" value="删除"> -->
                         </td>
+                        {% endif %}
                     </tr>
                     {% endfor %}
                 </tbody>

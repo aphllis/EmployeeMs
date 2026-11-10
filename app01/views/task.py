@@ -9,14 +9,19 @@ from django.views.decorators.http import require_POST
 from app01 import models
 from app01.utils.form import TaskModelForm
 from app01.utils.pagination import Pagination
-from app01.utils.permission import account_permission,account_permission_any,get_current_account
+from app01.utils.permission import (
+    account_permission,
+    account_permission_any,
+    get_current_account,
+)
+
 
 def visible_tasks_for(account):
-    queryset=models.TaskManage.objects.all()
+    queryset = models.TaskManage.objects.all()
     # ProjectManager 等持有通用查看权限的账号可以查看全部任务。
     if account.has_perm("app01.view_taskmanage"):
         return queryset
-    
+
     # ProjectManager 等持有通用查看权限的账号可以查看全部任务。
     if account.has_perm("app01.view_own_taskmanage") and account.employee_id:
         return queryset.filter(executor_id=account.employee_id)
@@ -28,12 +33,24 @@ def visible_tasks_for(account):
     "app01.view_own_taskmanage",
 )
 def task_lst(req):
-    account=get_current_account(req)
-    queryset=visible_tasks_for(account).order_by("-id")
+    account = get_current_account(req)
+    queryset = visible_tasks_for(account).order_by("-id")
     form = TaskModelForm()
-    
-    if not queryset:
-        return render(req, "task_lst.html", {"form": form})
+
+    can_add_task = account.has_perm("app01.add_taskmanage")
+    can_change_task = account.has_perm("app01.change_taskmanage")
+
+    if not queryset.exists():
+        return render(
+            req,
+            "task_lst.html",
+            {
+                "form": form,
+                "queryset": [],
+                "can_add_task": can_add_task,
+                "can_change_task": can_change_task,
+            },
+        )
 
     obj = Pagination(request=req, queryset=queryset, page_size=5)
     context = {
@@ -42,9 +59,10 @@ def task_lst(req):
         "page_str": obj.html()[0],
         "goto_page_str": obj.html()[1],
         "goto_page": obj.goto_page,
+        "can_add_task": can_add_task,
+        "can_change_task": can_change_task,
     }
     return render(req, "task_lst.html", context)
-
 
 
 def task_ajax(req):
@@ -89,10 +107,11 @@ def task_del(req):
     "app01.view_own_taskmanage",
 )
 def task_detail(req):
-    account=get_current_account(req)
+    account = get_current_account(req)
     uid = req.GET.get("uid")
     row_obj = (
-        visible_tasks_for(account).filter(id=uid)
+        visible_tasks_for(account)
+        .filter(id=uid)
         .values("level", "title", "detail", "executor")
         .first()
     )
@@ -105,25 +124,24 @@ def task_detail(req):
 @account_permission("app01.change_taskmanage")
 def task_edit(req):
     query_dict = req.POST.copy()
-    edit_id=req.POST.get("edit_id")
+    edit_id = req.POST.get("edit_id")
     query_dict.pop("edit_id", None)
 
     if not edit_id:
         return JsonResponse(
-            {"status":False,"error":"缺少任务编号"},
+            {"status": False, "error": "缺少任务编号"},
             status=400,
         )
-    
+
     row_obj = models.TaskManage.objects.filter(id=edit_id).first()
     if not row_obj:
         return JsonResponse(
             {"status": False, "error": "任务不存在"},
             status=404,
         )
-    
+
     form = TaskModelForm(data=query_dict, instance=row_obj)
     if form.is_valid():
         form.save()
         return JsonResponse({"status": True})
-    return JsonResponse({"status": False, "errors": form.errors},status=400)
-
+    return JsonResponse({"status": False, "errors": form.errors}, status=400)

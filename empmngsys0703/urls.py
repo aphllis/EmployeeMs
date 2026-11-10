@@ -25,6 +25,7 @@ from app01.views.api_views import EmployeeViewSet, DepartmentViewSet
 
 from app01.views import (
     department,
+    position,
     usr,
     admin,
     login,
@@ -59,6 +60,11 @@ urlpatterns = [
     path("department/del/", department.department_del),
     path("department/edit/", department.department_edit),
     path("department/batch/", department.department_batch),
+    #职位管理
+    path("position/lst/",position.position_lst),
+    path("position/add/",position.position_add),
+    path("position/<int:nid>/edit/",position.position_edit),
+    path("position/<int:nid>/status/",position.position_status),
     # 用户管理
     path("usr/lst/", usr.usr_lst),
     # path('usr/add/', usr.usr_add),

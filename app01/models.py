@@ -62,12 +62,30 @@ class Department(models.Model):
 class Position(models.Model):
     """职位表"""
 
+    department = models.ForeignKey(
+        "Department",
+        verbose_name="所属部门",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="positions",
+    )
     name = models.CharField(verbose_name="职位名称", max_length=64)
 
     description = models.CharField(verbose_name="说明", max_length=255, blank=True)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
+    class Metas:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["department", "name"],
+                name="uniq_position_name_per_department",
+            )
+        ]
+
     def __str__(self):
+        if self.department_id:
+            return f"{self.department.title}-{self.name}"
         return self.name
 
 
@@ -111,6 +129,7 @@ class Employee(models.Model):
     )
     # django的约束
 
+
 class TaskManage(models.Model):
     """任务管理表"""
 
@@ -123,9 +142,10 @@ class TaskManage(models.Model):
     executor = models.ForeignKey(
         verbose_name="执行者", to=Employee, to_field="id", on_delete=models.CASCADE
     )
+
     class Meta:
-        permissions=[
-            ("view_own_taskmanage","Can view tasks assigned to the current employee"),
+        permissions = [
+            ("view_own_taskmanage", "Can view tasks assigned to the current employee"),
         ]
 
 
@@ -135,7 +155,7 @@ class Order(models.Model):
     oid = models.CharField(verbose_name="工单号", max_length=64, unique=True)
     title = models.CharField(verbose_name="事项名称", max_length=64)
     price = models.DecimalField(
-        verbose_name="金额", max_digits=12, decimal_places=2, default=Decimal('0')
+        verbose_name="金额", max_digits=12, decimal_places=2, default=Decimal("0")
     )
     type_choices = (
         (1, "项目报价"),
@@ -157,17 +177,22 @@ class Order(models.Model):
         verbose_name="处理状态", choices=status_choices, default=1
     )
     admin = models.ForeignKey(
-        verbose_name="负责人", to=Admin, to_field="id", on_delete=models.CASCADE,null=True,blank=True
+        verbose_name="负责人",
+        to=Admin,
+        to_field="id",
+        on_delete=models.CASCADE,
+        null=True,
+        blank=True,
     )
     detail = models.TextField(verbose_name="详细说明", blank=True)
 
-    created_by=models.ForeignKey(
+    created_by = models.ForeignKey(
         "Account",
         verbose_name="创建账号",
         on_delete=models.PROTECT,
         related_name="created_orders",
         null=True,
-        blank=True
+        blank=True,
     )
 
 
@@ -180,7 +205,7 @@ class ProfileInfo(models.Model):
         null=True,
         blank=True,
     )
-    account=models.OneToOneField(
+    account = models.OneToOneField(
         "Account",
         on_delete=models.CASCADE,
         related_name="profile_info",
@@ -205,7 +230,9 @@ class ProfileInfo(models.Model):
     )
     position = models.CharField(verbose_name="职位", max_length=32, blank=True)
     # avatar = models.CharField(verbose_name="头像", max_length=128, blank=True)
-    avatar = models.ImageField(verbose_name="头像",upload_to="avatars/",max_length=255,blank=True)
+    avatar = models.ImageField(
+        verbose_name="头像", upload_to="avatars/", max_length=255, blank=True
+    )
 
     age = models.IntegerField(verbose_name="年龄", null=True, blank=True)
     gender_choices = ((1, "男"), (2, "女"))
@@ -214,46 +241,31 @@ class ProfileInfo(models.Model):
     )
     email = models.CharField(verbose_name="邮箱", max_length=64, null=True, blank=True)
 
+
 class Account(models.Model):
     """系统登录账号"""
-    username=models.CharField(verbose_name="用户名",max_length=32,unique=True)
 
-    password=models.CharField(verbose_name="密码",max_length=128)
+    username = models.CharField(verbose_name="用户名", max_length=32, unique=True)
 
-    email=models.EmailField(
-        verbose_name="邮箱",
-        max_length=254,
-        unique=True,
-        null=True,
-        blank=True
+    password = models.CharField(verbose_name="密码", max_length=128)
+
+    email = models.EmailField(
+        verbose_name="邮箱", max_length=254, unique=True, null=True, blank=True
     )
 
-    email_verified=models.BooleanField(
-        verbose_name="邮箱已验证",
-        default=False
+    email_verified = models.BooleanField(verbose_name="邮箱已验证", default=False)
+
+    phone = models.CharField(
+        verbose_name="手机号", max_length=20, unique=True, null=True, blank=True
     )
 
-    phone=models.CharField(
-        verbose_name="手机号",
-        max_length=20,
-        unique=True,
-        null=True,
-        blank=True
+    phone_verified = models.BooleanField(verbose_name="手机已验证", default=False)
+
+    groups = models.ManyToManyField(
+        Group, blank=True, related_name="accounts", verbose_name="角色组"
     )
 
-    phone_verified=models.BooleanField(
-        verbose_name="手机已验证",
-        default=False
-    )
-
-    groups=models.ManyToManyField(
-        Group,
-        blank=True,
-        related_name="accounts",
-        verbose_name="角色组"
-    )
-
-    employee=models.OneToOneField(
+    employee = models.OneToOneField(
         "Employee",
         on_delete=models.SET_NULL,
         null=True,
@@ -262,16 +274,17 @@ class Account(models.Model):
         verbose_name="关联员工",
     )
 
-    is_active=models.BooleanField(verbose_name="是否启用",default=True)
-    created_at=models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    updated_at=models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        permissions=[
-            ("manage_account_roles","can manage account roles"),
-            ("reset_account_password","can reset account password"),
+        permissions = [
+            ("manage_account_roles", "can manage account roles"),
+            ("reset_account_password", "can reset account password"),
         ]
+
     def has_perm(self, perm, obj=None):
         """判断当前账号是否拥有指定权限"""
         for backend in get_backends():

@@ -1,0 +1,113 @@
+{% extends 'layout.html' %}
+
+{% block content %}
+<div class="container" style="width: 80rem">
+    <ul class="nav nav-tabs mb-3">
+        <li class="nav-item">
+            <a class="nav-link" href="/department/lst/">部门</a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link active" href="/position/lst/">职位</a>
+        </li>
+    </ul>
+
+    <div class="mb-2 d-flex align-items-center">
+        <div class="me-auto">
+            {% if can_add %}
+            <a class="btn btn-success btn-sm" href="/position/add/">
+                <i class="bi bi-plus-circle-fill"></i> 新建职位
+            </a>
+            {% endif %}
+        </div>
+
+        <form method="get" class="d-flex">
+            <input
+                type="text"
+                name="q"
+                class="form-control"
+                placeholder="搜索职位、说明或部门"
+                value="{{ search_data }}"
+            >
+            <button class="btn btn-outline-success" type="submit">
+                <i class="bi bi-search"></i>
+            </button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-list-ul"></i> 职位列表
+        </div>
+
+        <table class="table table-bordered mb-0 text-center">
+            <thead>
+                <tr>
+                    <th>所属部门</th>
+                    <th>职位名称</th>
+                    <th>说明</th>
+                    <th>状态</th>
+                    {% if can_change %}
+                    <th>操作</th>
+                    {% endif %}
+                </tr>
+            </thead>
+            <tbody>
+                {% for obj in queryset %}
+                <tr>
+                    <td>{{ obj.department.title|default:"未分配部门" }}</td>
+                    <td>{{ obj.name }}</td>
+                    <td>{{ obj.description|default:"—" }}</td>
+                    <td>{{ obj.is_active|yesno:"启用,停用" }}</td>
+
+                    {% if can_change %}
+                    <td>
+                        <a
+                            class="btn btn-primary btn-sm"
+                            href="/position/{{ obj.id }}/edit/"
+                        >
+                            编辑
+                        </a>
+
+                        <form
+                            method="post"
+                            action="/position/{{ obj.id }}/status/"
+                            class="d-inline"
+                        >
+                            {% csrf_token %}
+                            <button
+                                class="btn btn-sm {% if obj.is_active %}btn-warning{% else %}btn-success{% endif %}"
+                                type="submit"
+                            >
+                                {% if obj.is_active %}停用{% else %}启用{% endif %}
+                            </button>
+                        </form>
+                    </td>
+                    {% endif %}
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="{% if can_change %}5{% else %}4{% endif %}" class="text-muted">
+                        {% if search_data %}
+                        没有匹配的职位
+                        {% else %}
+                        暂无职位数据
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if page_str %}
+    <div class="d-flex">
+        <ul class="pagination mt-2 me-auto">
+            {{ page_str }}
+        </ul>
+        <ul class="pagination mt-2">
+            {{ goto_page_str }}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

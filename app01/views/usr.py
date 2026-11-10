@@ -16,39 +16,14 @@ def usr_lst(req):
     if not queryset:
         return render(req, "usr_lst.html", {"form": form})
     """ 用户管理"""
-    # #python语法中获取值：
-    # #obj.get_gender_display() 直接在models中创建性别时的元组里面匹配性别按照中文显示
-    # #原表中的外键department_id，如果不加上_id 直接obj.department，django会直接去关联的表中获取对象,然后可以获取对应的中文名
-    # for obj in querySet:
-    #     print(obj.name,obj.entry_date,obj.get_gender_display(),obj.department.title)
-    if queryset:
-        page_object = Pagination(request=req, queryset=queryset)
-        context = {
-            "queryset": page_object.page_queryset,
-            "page_str": page_object.html()[0],
-            "goto_page_str": page_object.html()[1],
-        }
-        return render(req, "usr_lst.html", context)
 
-
-# def usr_add(req):
-#     """ 添加用户(原始方式) """
-#     if req.method == 'GET':
-#         context = {
-#             'gender_choices': models.Employee.gender_choices,
-#             'department_info': models.Department.objects.all()
-#         }
-#         return render(req, 'usr_add.html', context)
-#     usr = req.POST.get('usr')
-#     gender_id = req.POST.get('gender')
-#     age = req.POST.get('age')
-#     pwd = req.POST.get('pwd')
-#     entry_date = req.POST.get('entry_date')
-#     department_id = req.POST.get('department')
-#     models.Employee.objects.create(name=usr, gender=gender_id, age=age, password=pwd,
-#                                    entry_date=entry_date, department_id=department_id)
-#     return redirect('/usr/lst/')
-
+    page_object = Pagination(request=req, queryset=queryset)
+    context = {
+        "queryset": page_object.page_queryset,
+        "page_str": page_object.html()[0],
+        "goto_page_str": page_object.html()[1],
+    }
+    return render(req, "usr_lst.html", context)
 
 # ############## modelform示例 ##############
 @account_permission("app01.add_employee")

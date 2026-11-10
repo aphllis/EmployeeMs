@@ -2,6 +2,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 # from django.core.validators import RegexValidator
+from django.db.models import Q
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 
@@ -16,6 +17,17 @@ class DepartModelForm(BootstrapModelForm):
     class Meta:
         model = models.Department
         fields = ["title"]
+
+class PositionModelForm(BootstrapModelForm):
+    class Meta:
+        model=models.Position
+        fields=["department","name","description"]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["department"].required=True
+        self.fields["department"].queryset=models.Department.objects.filter(is_active=True).order_by("title")
+
+
 
 
 class UserModelForm(BootstrapModelForm):
@@ -38,16 +50,38 @@ class UserModelForm(BootstrapModelForm):
         #     'password':forms.PasswordInput(attrs={'class':'form-control mb-3'})
         # }
 
+    # 下面的构造方法配置表单字段对象的属性，可以负责什么样的数据可以有效
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
-# 利用源码循环添加样式功能已封装入BootstrapModelForm中
-# def __init__(self, *args, **kwargs):
-#     super().__init__(*args, **kwargs)
-#     for name, fld in self.fields.items():
-#         if fld.widget.attrs:
-#             fld.widget.attrs['class']='form-control mb-3'
-#             fld.widget.attrs['PlaceHolder']=fld.label
-#         else:
-#             fld.widget.attrs = {'class': 'form-control mb-3', 'PlaceHolder': fld.label}
+        self.fields["department"].required=True
+        self.fields["position"].required=True
+        self.fields["department"].queryset=models.Department.objects.filter(
+            is_active=True
+        ).order_by("title")
+        #department__is_active=True跨关联模型查询，默认条件为exact
+        # Q,组合查询条件
+        position_filter=Q(is_active=True,department__is_active=True)
+
+        # 编辑员工时，保留当前职位选项，即使这个职位后来被停用了。self是当前表单实例，self.instance是关联的Employee模型对象
+        if self.instance.pk and self.instance.position_id:
+            position_filter|=Q(pk=self.instance.position_id)
+        self.fields["position"].queryset=(
+            models.Position.objects.filter(position_filter)
+            .select_related("department")
+            .order_by("department__title","name")
+        )
+    # 多字段校验一般卸载clean方法中，单字段检验写在clean_字段名方法中。
+    def clean(self):
+        cleaned_data=super().clean()
+        department=cleaned_data.get("department")
+        position=cleaned_data.get("position")
+        if (
+            department and position and position.department_id !=department.pk
+        ):
+            self.add_error("position","所选职位不属于所选部门")
+        return cleaned_data
+
 
 
 class AdminModelForm(BootstrapModelForm):
@@ -391,6 +425,8 @@ class EmployeeCreateForm(UserModelForm):
 
     # 跨字段校验
     def clean(self):
+        #显示调用父类clean方法的原因是，可以启用后续模型唯一性校验
+        #实际super().clean()就是self.cleaned_data
         cleaned_data = super().clean()
         password = cleaned_data.get("initial_password")
         confirm_password = cleaned_data.get("confirm_password")
