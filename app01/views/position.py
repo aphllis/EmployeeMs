@@ -51,7 +51,7 @@ def position_lst(req):
 @account_permission("app01.add_position")
 def position_add(req):
     if req.method=="POST":
-        form=PositionModelForm(data=req.Post)
+        form=PositionModelForm(data=req.POST)
         if form.is_valid():
             form.save()
             return redirect("/position/lst/")
@@ -65,6 +65,9 @@ def position_edit(req,nid):
 
     if req.method=="POST":
         form=PositionModelForm(data=req.POST,instance=position)
+        if form.is_valid():
+            form.save()
+            return redirect("/position/lst/")
     else:
         form=PositionModelForm(instance=position)
     return render(req,"change.html",{"form":form,"title":"编辑职位"})

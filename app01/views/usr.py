@@ -3,50 +3,77 @@ from django.contrib.auth.hashers import make_password
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth.models import Group
+from django.db.models import Q
 
 from app01 import models
 from app01.utils.pagination import Pagination
-from app01.utils.form import UserModelForm,EmployeeCreateForm
-from app01.utils.permission import account_permission,get_current_account
+from app01.utils.form import UserModelForm, EmployeeCreateForm
+from app01.utils.permission import account_permission, get_current_account
+
 
 @account_permission("app01.view_employee")
 def usr_lst(req):
-    queryset = models.Employee.objects.all()
-    form = UserModelForm()
-    if not queryset:
-        return render(req, "usr_lst.html", {"form": form})
-    """ 用户管理"""
+    account = get_current_account(req)
+    search_data = req.GET.get("q", "").strip()
 
-    page_object = Pagination(request=req, queryset=queryset)
+    queryset = models.Employee.objects.select_related(
+        "department", "position", "login_account"
+    ).order_by("id")
+
+    can_view_account=account.has_perm("app01.view_account")
+    #查询条件组合
+    if search_data:
+        search_filter=(
+            Q(name__icontains=search_data)
+            |Q(emplpyee_no__icontains=search_data)
+            |Q(department__title__icontains=search_data)
+            |Q(position__name__icontains=search_data)
+        )
+        if can_view_account:
+            search_filter|=Q(login_account__username__icontains=search_data)
+
+        queryset=queryset.filter(search_data)
+
+    if queryset.exists():
+        page_obj=Pagination(request=req,queryset=queryset)
+        page_queryset=page_obj.page_queryset
+        page_str,goto_page_str=page_obj.html()
+    else:
+        page_queryset=[]
+        page_str=""
+        goto_page_str=""
+
     context = {
-        "queryset": page_object.page_queryset,
-        "page_str": page_object.html()[0],
-        "goto_page_str": page_object.html()[1],
+        "queryset": page_queryset,
+        "page_str": page_str,
+        "goto_page_str": goto_page_str,
     }
     return render(req, "usr_lst.html", context)
 
-# ############## modelform示例 ##############
+
 @account_permission("app01.add_employee")
 @account_permission("app01.add_account")
 def usr_modelform_add(req):
     """添加用户（modelform版本）"""
     if req.method == "GET":
-        form =EmployeeCreateForm()
-        return render(req, "change.html", {"form": form, "title": "新建员工并创建登录账号"})
+        form = EmployeeCreateForm()
+        return render(
+            req, "change.html", {"form": form, "title": "新建员工并创建登录账号"}
+        )
 
     # 用户POST提交数据，数据校验
     form = EmployeeCreateForm(data=req.POST)
     if form.is_valid():
         # 事务原子操作，确保员工和账号一起成功或者回滚
         with transaction.atomic():
-            employee=form.save()
-            account=models.Account.objects.create(
+            employee = form.save()
+            account = models.Account.objects.create(
                 username=form.cleaned_data["account_username"],
                 password=make_password(form.cleaned_data["initial_password"]),
                 employee=employee,
-                is_active=True
+                is_active=True,
             )
-            regular_employee_group=Group.objects.get(name="RegularEmployee")
+            regular_employee_group = Group.objects.get(name="RegularEmployee")
             account.groups.add(regular_employee_group)
         return redirect("/usr/lst/")
 
@@ -75,6 +102,7 @@ def usr_edit(req, nid):
         form.save()
         return redirect("/usr/lst/")
     return render(req, "usr_edit.html", {"form": form, "title": "编辑用户"})
+
 
 @require_POST
 @account_permission("app01.delete_employee")
