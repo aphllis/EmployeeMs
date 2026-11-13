@@ -58,7 +58,7 @@ urlpatterns = [
     # 部门管理
     path("department/lst/", department.department_lst),
     path("department/add/", department.department_add),
-    path("department/del/", department.department_del),
+    path("department/<int:nid>/status/", department.department_status),
     path("department/edit/", department.department_edit),
     # path("department/batch/", department.department_batch),
     # 职位管理

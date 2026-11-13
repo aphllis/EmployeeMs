@@ -10,13 +10,43 @@ from app01 import models
 from app01.utils.bootstrap import BootstrapModelForm, BootstrapForm
 
 
-# 引入正则校验
 class DepartModelForm(BootstrapModelForm):
     title = forms.CharField(label="部门名")
 
     class Meta:
         model = models.Department
-        fields = ["title"]
+        fields = [
+            "code",
+            "title",
+            "parent",
+            "description",
+            "sort_order",
+        ]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        self.fields["parent"].queryset=models.Department.objects.filter(
+            is_active=True
+        ).order_by("sort_order","title")
+
+        # 编辑时，不能出现自己是自己的上级
+        if self.instance.pk:
+            self.fields["parent"].queryset=self.fields["parent"].queryset.exclude(pk=self.instance.pk)
+     
+    def clean_code(self):
+            return self.cleaned_data["code"].strip().upper()
+
+    def clean_parent(self):
+        parent = self.cleaned_data.get("parent")
+        current = parent
+
+        # 防止把本部门或自己的下级部门设为上级，造成循环层级。
+        while current:
+            if self.instance.pk and current.pk == self.instance.pk:
+                raise ValidationError("不能将本部门或下级部门设为上级部门")
+            current = current.parent
+
+        return parent
 
 class PositionModelForm(BootstrapModelForm):
     class Meta:

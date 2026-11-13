@@ -1,96 +1,84 @@
-import traceback
-
-from django.shortcuts import render, redirect, HttpResponse
-from django.template.defaultfilters import title
+from django.db.models import Count
+from django.shortcuts import render, redirect,get_object_or_404
 from django.views.decorators.http import require_POST
-from django.http import JsonResponse
 
 from app01 import models
 from app01.utils.pagination import Pagination
 from app01.utils.form import DepartModelForm
-from app01.utils.permission import account_permission
-from openpyxl import load_workbook
+from app01.utils.permission import account_permission,get_current_account
 
 
 # Create your views here.
 @account_permission("app01.view_department")
 def department_lst(req):
-    """ 部门列表 """
-    # 数据库中获取所有部门信息
-    # queryset是对象列表[对象，对象，对象]
-    print(req.user)
-    queryset = models.Department.objects.all()
-    if not queryset:return render(req,"department_lst.html")
-    page_object = Pagination(request=req, queryset=queryset)
-    context = {
-        'queryset': page_object.page_queryset,
-        'page_str': page_object.html()[0],
-        'goto_page_str': page_object.html()[1],
-        'start_index': page_object.start
-    }
-    return render(req, 'department_lst.html', context)
+    """部门列表"""
+    account=get_current_account(req)
+
+    queryset=(
+        models.Department.objects.select_related("parent")
+        .annotate(employee_count=Count("employees",distinct=True))
+        .order_by("sort_order","id")
+    )
+
+    if queryset.exists():
+        page_object = Pagination(request=req, queryset=queryset)
+        page_queryset = page_object.page_queryset
+        page_str, goto_page_str = page_object.html()
+        start_index = page_object.start
+    else:
+        page_queryset = []
+        page_str = ""
+        goto_page_str = ""
+        start_index = 0
+
+    return render(
+        req,
+        "department_lst.html",
+        {
+            "queryset": page_queryset,
+            "page_str": page_str,
+            "goto_page_str": goto_page_str,
+            "start_index": start_index,
+            "can_add": account.has_perm("app01.add_department"),
+            "can_change": account.has_perm("app01.change_department"),
+        },
+    )
+
 
 @account_permission("app01.add_department")
 def department_add(req):
-    """ 添加部门 """
-    if req.method == 'GET':
+    """添加部门"""
+    if req.method == "GET":
         form = DepartModelForm()
-        return render(req, 'change.html', {'form': form, 'title': '添加部门'})
+        return render(req, "change.html", {"form": form, "title": "添加部门"})
     form = DepartModelForm(data=req.POST)
     if form.is_valid():
         form.save()
-        return redirect('/department/lst/')
-    return render(req, 'change.html', {'form': form, 'title': '添加部门'})
+        return redirect("/department/lst/")
+    return render(req, "change.html", {"form": form, "title": "添加部门"})
 
-# @require_POST
-# @account_permission("app01.add_department")
-# def department_batch(req):
-#     file_obj = req.FILES.get('excel_file')
-#     if not file_obj:
-#         return JsonResponse({'error': '未收到文件'}, status=400)
-#     if not file_obj.name.endswith(('.xlsx', 'xls')):
-#         return JsonResponse({'error': '仅支持.xlsx或.xls格式'},status=400)
-#     try:
-#         wb=load_workbook(file_obj,data_only=True)
-#         sheet=wb.worksheets[0]
-#         rows=[list(row) for row in sheet.iter_rows(values_only=True)]
-#         for row in sheet.iter_rows(min_row=2):
-#             val=row[0].value
-#             exist=models.Department.objects.filter(title=val).exists()
-#             if not exist:
-#                 models.Department.objects.create(title=val)
-#         return JsonResponse({
-#             'message':'上传成功',
-#             'rows_pre':rows[:5],
-#             'total_rows':len(rows)
-#         })
-#     except Exception as e:
-#         traceback.print_exc()
-#         return JsonResponse({'error':f'文件解析失败:{str(e)}'},status=400)
 
 @require_POST
-@account_permission("app01.delete_department")
-def department_del(req):
-    """ 删除部门 """
-    nid = req.POST.get('nid')
-    models.Department.objects.filter(id=nid).delete()
-    return redirect('/department/lst/')
+@account_permission("app01.change_department")
+def department_status(req, nid):
+    department = get_object_or_404(models.Department, pk=nid)
+    department.is_active = not department.is_active
+    department.save(update_fields=["is_active", "updated_at"])
+    return redirect("/department/lst/")
+
 
 @account_permission("app01.change_department")
 def department_edit(req):
-    """ 编辑部门 """
-    nid = req.GET.get('nid')
+    """编辑部门"""
+    nid = req.GET.get("nid")
     row_obj = models.Department.objects.filter(id=nid).first()
     if not row_obj:
-        return redirect('/department/lst/')
-    if req.method == 'GET':
+        return redirect("/department/lst/")
+    if req.method == "GET":
         form = DepartModelForm(instance=row_obj)
-        return render(req, 'change.html', {'form': form, 'title': '部门编辑'})
+        return render(req, "change.html", {"form": form, "title": "部门编辑"})
     form = DepartModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
         form.save()
-        return redirect('/department/lst/')
-    return render(req, 'change.html', {'form': form, 'title': '部门编辑'})
-    # title = req.POST.get('title')
-    # models.Department.objects.filter(id=nid).update(title=title)
-    # return redirect('/department/lst/')
+        return redirect("/department/lst/")
+    return render(req, "change.html", {"form": form, "title": "部门编辑"})
