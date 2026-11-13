@@ -41,40 +41,32 @@ def department_add(req):
         form.save()
         return redirect('/department/lst/')
     return render(req, 'change.html', {'form': form, 'title': '添加部门'})
-    # 非ModalForm的数据保存
-    # 获取表单提交的数据
-    # title = req.POST.get('title')
-    # # 保存到数据库
-    # models.Department.objects.create(title=title)
-    # # 重定向到部门列表
-    # return redirect('/department/lst/')
 
-
-@require_POST
-@account_permission("app01.add_department")
-def department_batch(req):
-    file_obj = req.FILES.get('excel_file')
-    if not file_obj:
-        return JsonResponse({'error': '未收到文件'}, status=400)
-    if not file_obj.name.endswith(('.xlsx', 'xls')):
-        return JsonResponse({'error': '仅支持.xlsx或.xls格式'},status=400)
-    try:
-        wb=load_workbook(file_obj,data_only=True)
-        sheet=wb.worksheets[0]
-        rows=[list(row) for row in sheet.iter_rows(values_only=True)]
-        for row in sheet.iter_rows(min_row=2):
-            val=row[0].value
-            exist=models.Department.objects.filter(title=val).exists()
-            if not exist:
-                models.Department.objects.create(title=val)
-        return JsonResponse({
-            'message':'上传成功',
-            'rows_pre':rows[:5],
-            'total_rows':len(rows)
-        })
-    except Exception as e:
-        traceback.print_exc()
-        return JsonResponse({'error':f'文件解析失败:{str(e)}'},status=400)
+# @require_POST
+# @account_permission("app01.add_department")
+# def department_batch(req):
+#     file_obj = req.FILES.get('excel_file')
+#     if not file_obj:
+#         return JsonResponse({'error': '未收到文件'}, status=400)
+#     if not file_obj.name.endswith(('.xlsx', 'xls')):
+#         return JsonResponse({'error': '仅支持.xlsx或.xls格式'},status=400)
+#     try:
+#         wb=load_workbook(file_obj,data_only=True)
+#         sheet=wb.worksheets[0]
+#         rows=[list(row) for row in sheet.iter_rows(values_only=True)]
+#         for row in sheet.iter_rows(min_row=2):
+#             val=row[0].value
+#             exist=models.Department.objects.filter(title=val).exists()
+#             if not exist:
+#                 models.Department.objects.create(title=val)
+#         return JsonResponse({
+#             'message':'上传成功',
+#             'rows_pre':rows[:5],
+#             'total_rows':len(rows)
+#         })
+#     except Exception as e:
+#         traceback.print_exc()
+#         return JsonResponse({'error':f'文件解析失败:{str(e)}'},status=400)
 
 @require_POST
 @account_permission("app01.delete_department")

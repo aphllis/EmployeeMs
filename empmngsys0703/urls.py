@@ -60,7 +60,7 @@ urlpatterns = [
     path("department/add/", department.department_add),
     path("department/del/", department.department_del),
     path("department/edit/", department.department_edit),
-    path("department/batch/", department.department_batch),
+    # path("department/batch/", department.department_batch),
     # 职位管理
     path("position/lst/",position.position_lst),
     path("position/add/",position.position_add),

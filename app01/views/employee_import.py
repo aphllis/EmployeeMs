@@ -100,7 +100,8 @@ def _read_employee_rows(file_obj):
 
         headers = [_text(value) for value in header_values]
 
-        if len(headers) != len(set(headers)):
+        nonempty_headers = [header for header in headers if header]
+        if len(nonempty_headers) != len(set(nonempty_headers)):
             return [], [], "Excel 表头有重复列"
 
         missing_headers = [header for header in HEADERS if header not in headers]
@@ -182,9 +183,11 @@ def _read_employee_rows(file_obj):
 
             # 姓名校验
             if not name:
-                errors.append("")
-            elif len(name) > 9:
-                errors.append("姓名不能超过9个字符")
+                errors.append("姓名不能为空")
+            elif len(name) < 2:
+                errors.append("姓名至少需要 2 个字符")
+            elif len(name) > 32:
+                errors.append("姓名不能超过 32 个字符")
 
             # 用户名校验
             if not username:
@@ -525,7 +528,7 @@ def employee_import_confirm(req):
     req.session.modified = True
 
     # 显示导入成功结果
-    return render(
+    response= render(
         req,
         "employee_import_result.html",
         {
@@ -533,3 +536,6 @@ def employee_import_confirm(req):
             "credentials": credentials,
         },
     )
+    # 禁止缓存的响应头，避免浏览器缓存凭据
+    response["Cache-Control"] = "no-store"
+    return response

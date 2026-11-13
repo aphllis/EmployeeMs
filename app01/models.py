@@ -44,6 +44,8 @@ class Department(models.Model):
 
     title = models.CharField(verbose_name="部门名", max_length=32)
 
+    code = models.CharField(verbose_name="部门编码", max_length=16, unique=True)
+
     parent = models.ForeignKey(
         "self",
         verbose_name="上级部门",
@@ -53,7 +55,17 @@ class Department(models.Model):
         related_name="children",
     )
 
+    description = models.TextField(verbose_name="部门说明", blank=True)
+    sort_order = models.PositiveIntegerField(
+        verbose_name="显示顺序",
+        default=0,
+    )
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=["sort_order","id"]
 
     def __str__(self):
         return self.title
@@ -75,15 +87,15 @@ class Position(models.Model):
     description = models.CharField(verbose_name="说明", max_length=255, blank=True)
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
-    #Meta模型配置类，配置整个模型
+    # Meta模型配置类，配置整个模型
     class Meta:
-        #约束列表
+        # 约束列表
         constraints = [
-            #唯一约束
+            # 唯一约束
             models.UniqueConstraint(
-                #唯一性由两个字段组合决定，一个是外键一个是模型自己的字段
+                # 唯一性由两个字段组合决定，一个是外键一个是模型自己的字段
                 fields=["department", "name"],
-                #约束名
+                # 约束名
                 name="uniq_position_name_per_department",
             )
         ]
