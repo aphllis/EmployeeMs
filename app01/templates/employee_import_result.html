@@ -1,0 +1,41 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container" style="width: 80rem">
+    <div class="alert alert-success">
+        已成功创建 {{ created_count }} 名员工及对应账号。
+    </div>
+
+    <div class="alert alert-warning">
+        临时密码只在本页显示一次，请及时保存并分别交给员工。
+        离开或刷新页面后无法再次查看。
+    </div>
+
+    <div class="card">
+        <div class="card-header">新账号临时凭据</div>
+        <div class="table-responsive">
+            <table class="table table-bordered text-center mb-0">
+                <thead>
+                    <tr>
+                        <th>工号</th>
+                        <th>姓名</th>
+                        <th>登录用户名</th>
+                        <th>临时密码</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in credentials %}
+                    <tr>
+                        <td>{{ row.employee_no }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.username }}</td>
+                        <td>{{ row.temporary_password }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <a class="btn btn-primary mt-3" href="/usr/lst/">返回员工列表</a>
+</div>
+{% endblock %}

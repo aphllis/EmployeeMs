@@ -54,8 +54,6 @@ def department_add(req):
 @account_permission("app01.add_department")
 def department_batch(req):
     file_obj = req.FILES.get('excel_file')
-    print(type(file_obj))
-    print('hello')
     if not file_obj:
         return JsonResponse({'error': '未收到文件'}, status=400)
     if not file_obj.name.endswith(('.xlsx', 'xls')):

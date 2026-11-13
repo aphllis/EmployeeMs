@@ -16,37 +16,48 @@ def usr_lst(req):
     account = get_current_account(req)
     search_data = req.GET.get("q", "").strip()
 
-    queryset = models.Employee.objects.select_related(
-        "department", "position", "login_account"
-    ).order_by("id")
+    queryset = (
+        models.Employee.objects
+        .select_related("department", "position", "login_account")
+        .order_by("id")
+    )
 
-    can_view_account=account.has_perm("app01.view_account")
-    #查询条件组合
+    can_view_account = account.has_perm("app01.view_account")
+
     if search_data:
-        search_filter=(
+        search_filter = (
             Q(name__icontains=search_data)
-            |Q(emplpyee_no__icontains=search_data)
-            |Q(department__title__icontains=search_data)
-            |Q(position__name__icontains=search_data)
+            | Q(employee_no__icontains=search_data)
+            | Q(department__title__icontains=search_data)
+            | Q(position__name__icontains=search_data)
         )
-        if can_view_account:
-            search_filter|=Q(login_account__username__icontains=search_data)
 
-        queryset=queryset.filter(search_data)
+        # 只有有权查看账号的用户，才可以通过登录用户名搜索。
+        if can_view_account:
+            search_filter |= Q(login_account__username__icontains=search_data)
+
+        queryset = queryset.filter(search_filter)
 
     if queryset.exists():
-        page_obj=Pagination(request=req,queryset=queryset)
-        page_queryset=page_obj.page_queryset
-        page_str,goto_page_str=page_obj.html()
+        page_obj = Pagination(request=req, queryset=queryset)
+        page_queryset = page_obj.page_queryset
+        page_str, goto_page_str = page_obj.html()
     else:
-        page_queryset=[]
-        page_str=""
-        goto_page_str=""
+        page_queryset = []
+        page_str = ""
+        goto_page_str = ""
 
     context = {
         "queryset": page_queryset,
         "page_str": page_str,
         "goto_page_str": goto_page_str,
+        "search_data": search_data,
+        "can_view_account": can_view_account,
+        "can_add": (
+            account.has_perm("app01.add_employee")
+            and account.has_perm("app01.add_account")
+        ),
+        "can_change": account.has_perm("app01.change_employee"),
     }
     return render(req, "usr_lst.html", context)
 

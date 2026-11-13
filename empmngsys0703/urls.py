@@ -33,6 +33,7 @@ from app01.views import (
     order,
     chart,
     profile,
+    employee_import,
 )
 from app01.api import department_api, employee_api
 
@@ -60,18 +61,23 @@ urlpatterns = [
     path("department/del/", department.department_del),
     path("department/edit/", department.department_edit),
     path("department/batch/", department.department_batch),
-    #职位管理
+    # 职位管理
     path("position/lst/",position.position_lst),
     path("position/add/",position.position_add),
     path("position/<int:nid>/edit/",position.position_edit),
     path("position/<int:nid>/status/",position.position_status),
-    # 用户管理
+    # 员工管理
     path("usr/lst/", usr.usr_lst),
-    # path('usr/add/', usr.usr_add),
     path("usr/edit/", usr.usr_edit),
     path("usr/modelform/add/", usr.usr_modelform_add),
     path("usr/<int:nid>/edit/", usr.usr_edit),
     path("usr/<int:nid>/del/", usr.usr_del),
+    # 员工批量导入
+    path("usr/import/", employee_import.employee_import_page),
+    path("usr/import/template/", employee_import.employee_import_template),
+    path("usr/import/preview/", employee_import.employee_import_preview),
+    path("usr/import/confirm/", employee_import.employee_import_confirm),
+
     # 管理员
     path("admin/lst/", admin.admin_lst),
     # path("admin/add/", admin.admin_add),

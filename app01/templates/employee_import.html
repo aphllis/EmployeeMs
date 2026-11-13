@@ -1,0 +1,99 @@
+{% extends 'layout.html' %}
+{% block content %}
+<div class="container" style="width: 80rem">
+    <h4 class="mb-3">批量导入员工与账号</h4>
+
+    <p>
+        请先准备好部门和职位，再使用 Excel 模板。
+        每位员工会创建一个关联账号，角色为 RegularEmployee。
+    </p>
+
+    <div class="mb-3">
+        <a class="btn btn-outline-primary btn-sm"
+           href="/usr/import/template/">
+            下载 Excel 模板
+        </a>
+        <a class="btn btn-secondary btn-sm" href="/usr/lst/">
+            返回员工列表
+        </a>
+    </div>
+
+    {% if global_error %}
+    <div class="alert alert-danger">{{ global_error }}</div>
+    {% endif %}
+
+    {% if row_errors %}
+    <div class="alert alert-danger">
+        <strong>以下行需要修正，当前文件不会导入：</strong>
+        {% for item in row_errors %}
+        <div>第 {{ item.row_number }} 行：{{ item.errors|join:"；" }}</div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if not preview_token %}
+    <form method="post"
+          action="/usr/import/preview/"
+          enctype="multipart/form-data"
+          class="card card-body">
+        {% csrf_token %}
+        <label for="excel_file" class="form-label">选择 .xlsx 文件</label>
+        <input class="form-control mb-3"
+               type="file"
+               id="excel_file"
+               name="excel_file"
+               accept=".xlsx"
+               required>
+        <button class="btn btn-primary" type="submit">上传并预览</button>
+    </form>
+    {% endif %}
+
+    {% if preview_rows %}
+    <div class="card mt-3">
+        <div class="card-header">
+            校验通过：共 {{ preview_rows|length }} 名员工
+        </div>
+        <div class="table-responsive">
+            <table class="table table-bordered text-center mb-0">
+                <thead>
+                    <tr>
+                        <th>工号</th>
+                        <th>姓名</th>
+                        <th>性别</th>
+                        <th>年龄</th>
+                        <th>入职日期</th>
+                        <th>部门</th>
+                        <th>职位</th>
+                        <th>登录用户名</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in preview_rows %}
+                    <tr>
+                        <td>{{ row.employee_no }}</td>
+                        <td>{{ row.name }}</td>
+                        <td>{{ row.gender_display }}</td>
+                        <td>{{ row.age|default:"—" }}</td>
+                        <td>{{ row.entry_date }}</td>
+                        <td>{{ row.department_name }}</td>
+                        <td>{{ row.position_name }}</td>
+                        <td>{{ row.username }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if preview_token %}
+    <form method="post" action="/usr/import/confirm/" class="mt-3">
+        {% csrf_token %}
+        <input type="hidden" name="token" value="{{ preview_token }}">
+        <button class="btn btn-success" type="submit">
+            确认导入这 {{ preview_rows|length }} 名员工
+        </button>
+    </form>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

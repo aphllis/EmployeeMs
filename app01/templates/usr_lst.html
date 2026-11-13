@@ -8,17 +8,14 @@
             <a class="btn btn-success btn-sm" href="/usr/modelform/add/">
                 <i class="bi bi-plus-circle-fill"></i> 新建员工
             </a>
+            <a class="btn btn-success btn-sm" href="/usr/import/">
+                <i class="bi bi-file-earmark-spreadsheet"></i> Excel 批量导入
+            </a>
             {% endif %}
         </div>
 
         <form method="get" class="d-flex">
-            <input
-                type="search"
-                name="q"
-                class="form-control"
-                placeholder="搜索姓名、工号、部门或职位"
-                value="{{ search_data }}"
-            >
+            <input type="search" name="q" class="form-control" placeholder="搜索姓名、工号、部门或职位" value="{{ search_data }}">
             <button class="btn btn-outline-success" type="submit">
                 <i class="bi bi-search"></i>
             </button>
@@ -62,19 +59,18 @@
                     <td>{{ obj.position.name|default:"—" }}</td>
 
                     {% if can_view_account %}
-                        {% if obj.login_account %}
-                        <td>{{ obj.login_account.username }}</td>
-                        <td>{{ obj.login_account.is_active|yesno:"启用,禁用" }}</td>
-                        {% else %}
-                        <td class="text-muted">未关联</td>
-                        <td class="text-muted">—</td>
-                        {% endif %}
+                    {% if obj.login_account %}
+                    <td>{{ obj.login_account.username }}</td>
+                    <td>{{ obj.login_account.is_active|yesno:"启用,禁用" }}</td>
+                    {% else %}
+                    <td class="text-muted">未关联</td>
+                    <td class="text-muted">—</td>
+                    {% endif %}
                     {% endif %}
 
                     {% if can_change %}
                     <td>
-                        <a class="btn btn-primary btn-sm"
-                           href="/usr/{{ obj.id }}/edit/">
+                        <a class="btn btn-primary btn-sm" href="/usr/{{ obj.id }}/edit/">
                             编辑
                         </a>
                     </td>
