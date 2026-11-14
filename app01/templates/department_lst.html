@@ -50,18 +50,25 @@
                         <td>{{ obj.parent.title|default:"—" }}</td>
                         <td>{{ obj.description|default:"—" }}</td>
                         <td>{{ obj.employee_count }}</td>
-                        {% if can_change %}
                         <td>
                             <form method="post" action="/department/{{ obj.id }}/status/" class="d-inline">
                                 {% csrf_token %}
+                                {% if can_change %}
                                 <button
                                     class="btn btn-sm {% if obj.is_active %}btn-success{% else %}btn-warning{% endif %}"
                                     type="submit">
                                     {% if obj.is_active %}启用{% else %}禁用{% endif %}
                                 </button>
+                                {% else %}
+                                <button
+                                    class="btn btn-sm {% if obj.is_active %}btn-success{% else %}btn-warning{% endif %}"
+                                    type="submit" disabled="false">
+                                    {% if obj.is_active %}启用{% else %}禁用{% endif %}
+                                </button>
+                                {% endif %}
+
                             </form>
                         </td>
-                        {% endif %}
                         {% if can_change %}
                         <td>
                             <a class="btn btn-primary btn-sm" href="/department/edit/?nid={{ obj.id }}">

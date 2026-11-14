@@ -63,11 +63,11 @@ class Department(models.Model):
     is_active = models.BooleanField(verbose_name="是否启用", default=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
-    
+
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        ordering=["sort_order","id"]
+        ordering = ["sort_order", "id"]
 
     def __str__(self):
         return self.title
@@ -153,19 +153,106 @@ class TaskManage(models.Model):
     """任务管理表"""
 
     level_choices = ((1, "紧急"), (2, "重要"), (3, "临时"))
+
+    # 状态定义
+    STATUS_PENDING = "pending"
+    STATUS_IN_PROGRESS = "in_progress"
+    STATUS_BLOCKED = "blocked"
+    STATUS_COMPLETED = "completed"
+    STATUS_CANCELLED = "cancelled"
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "待开始"),
+        (STATUS_IN_PROGRESS, "进行中"),
+        (STATUS_BLOCKED, "受阻"),
+        (STATUS_COMPLETED, "已完成"),
+        (STATUS_CANCELLED, "已取消"),
+    )
     level = models.SmallIntegerField(
         verbose_name="级别", choices=level_choices, default=1
     )
     title = models.CharField(verbose_name="任务名", max_length=64)
+
     detail = models.TextField(verbose_name="详细信息")
+
     executor = models.ForeignKey(
-        verbose_name="执行者", to=Employee, to_field="id", on_delete=models.CASCADE
+        "Employee", on_delete=models.PROTECT, verbose_name="执行者"
     )
+
+    status = models.CharField(
+        verbose_name="任务状态",
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+    )
+
+    progress = models.PositiveSmallIntegerField(
+        verbose_name="完成进度",
+        default=0,
+    )
+
+    due_date = models.DateField(
+        verbose_name="截止日期",
+        null=True,
+        blank=True,
+    )
+    created_by = models.ForeignKey(
+        "Account",
+        verbose_name="创建账号",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="created_tasks",
+    )
+    # auto_now_add 在创建时触发；auto_now在创建或更新时触发
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
         permissions = [
             ("view_own_taskmanage", "Can view tasks assigned to the current employee"),
+            (
+                "update_own_taskmange",
+                "Can submit progress for tasks assigned to the current employee",
+            ),
         ]
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return self.title
+
+
+class TaskProgressLog(models.Model):
+    """任务进度日志，不覆盖之前的说明"""
+
+    task = models.ForeignKey(
+        "TaskManage",
+        verbose_name="任务进度日志",
+        on_delete=models.PROTECT,
+        related_name="progress_logs",
+    )
+
+    account = models.ForeignKey(
+        "Account",
+        verbose_name="提交账号",
+        on_delete=models.PROTECT,
+        related_name="task_progress_logs",
+    )
+    status = models.CharField(
+        verbose_name="提交后的状态",
+        max_length=16,
+        choices=TaskManage.STATUS_CHOICES,
+    )
+    # PositiveSmallIntegerField 是一个专门用来存储非负小整数的模型字段（Model Field）
+    progress = models.PositiveSmallIntegerField(verbose_name="提交后的进度")
+    note = models.TextField(verbose_name="进度说明")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.task.title} - {self.account.username}"
 
 
 class Order(models.Model):

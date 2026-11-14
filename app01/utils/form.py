@@ -22,19 +22,22 @@ class DepartModelForm(BootstrapModelForm):
             "description",
             "sort_order",
         ]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["parent"].queryset=models.Department.objects.filter(
+        self.fields["parent"].queryset = models.Department.objects.filter(
             is_active=True
-        ).order_by("sort_order","title")
+        ).order_by("sort_order", "title")
 
         # 编辑时，不能出现自己是自己的上级
         if self.instance.pk:
-            self.fields["parent"].queryset=self.fields["parent"].queryset.exclude(pk=self.instance.pk)
-     
+            self.fields["parent"].queryset = self.fields["parent"].queryset.exclude(
+                pk=self.instance.pk
+            )
+
     def clean_code(self):
-            return self.cleaned_data["code"].strip().upper()
+        return self.cleaned_data["code"].strip().upper()
 
     def clean_parent(self):
         parent = self.cleaned_data.get("parent")
@@ -48,16 +51,18 @@ class DepartModelForm(BootstrapModelForm):
 
         return parent
 
+
 class PositionModelForm(BootstrapModelForm):
     class Meta:
-        model=models.Position
-        fields=["department","name","description"]
+        model = models.Position
+        fields = ["department", "name", "description"]
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["department"].required=True
-        self.fields["department"].queryset=models.Department.objects.filter(is_active=True).order_by("title")
-
-
+        self.fields["department"].required = True
+        self.fields["department"].queryset = models.Department.objects.filter(
+            is_active=True
+        ).order_by("title")
 
 
 class UserModelForm(BootstrapModelForm):
@@ -84,34 +89,32 @@ class UserModelForm(BootstrapModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
-        self.fields["department"].required=True
-        self.fields["position"].required=True
-        self.fields["department"].queryset=models.Department.objects.filter(
+        self.fields["department"].required = True
+        self.fields["position"].required = True
+        self.fields["department"].queryset = models.Department.objects.filter(
             is_active=True
         ).order_by("title")
-        #department__is_active=True跨关联模型查询，默认条件为exact
+        # department__is_active=True跨关联模型查询，默认条件为exact
         # Q,组合查询条件
-        position_filter=Q(is_active=True,department__is_active=True)
+        position_filter = Q(is_active=True, department__is_active=True)
 
         # 编辑员工时，保留当前职位选项，即使这个职位后来被停用了。self是当前表单实例，self.instance是关联的Employee模型对象
         if self.instance.pk and self.instance.position_id:
-            position_filter|=Q(pk=self.instance.position_id)
-        self.fields["position"].queryset=(
+            position_filter |= Q(pk=self.instance.position_id)
+        self.fields["position"].queryset = (
             models.Position.objects.filter(position_filter)
             .select_related("department")
-            .order_by("department__title","name")
+            .order_by("department__title", "name")
         )
+
     # 多字段校验一般卸载clean方法中，单字段检验写在clean_字段名方法中。
     def clean(self):
-        cleaned_data=super().clean()
-        department=cleaned_data.get("department")
-        position=cleaned_data.get("position")
-        if (
-            department and position and position.department_id !=department.pk
-        ):
-            self.add_error("position","所选职位不属于所选部门")
+        cleaned_data = super().clean()
+        department = cleaned_data.get("department")
+        position = cleaned_data.get("position")
+        if department and position and position.department_id != department.pk:
+            self.add_error("position", "所选职位不属于所选部门")
         return cleaned_data
-
 
 
 class AdminModelForm(BootstrapModelForm):
@@ -164,6 +167,7 @@ class AdminModelForm(BootstrapModelForm):
 
 
 class AdminRoleForm(forms.ModelForm):
+
     groups = forms.ModelMultipleChoiceField(
         label="角色", queryset=Group.objects.all(), widget=forms.CheckboxSelectMultiple
     )
@@ -242,13 +246,90 @@ class AdminResetModelForm(BootstrapModelForm):
         return obj
 
 
-class TaskModelForm(BootstrapModelForm):
+class TaskAssignmentForm(BootstrapModelForm):
+    """项目负责人使用：维护任务内容和分配对象。"""
+
     class Meta:
         model = models.TaskManage
-        fields = "__all__"
+        fields = [
+            "level",
+            "title",
+            "detail",
+            "executor",
+            "due_date",
+        ]
         widgets = {
-            "detail": forms.TextInput,
+            "detail": forms.Textarea(attrs={"rows": 4}),
+            "due_date": forms.DateInput(attrs={"type": "date"}),
         }
+
+        labels = {
+            "level": "优先级",
+            "title": "任务名称",
+            "detail": "任务说明",
+            "executor": "执行员工",
+            "due_date": "截止日期",
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 只允许把任务分配给有启用登录账号的员工。
+        self.fields["executor"].queryset = {
+            models.Employee.objects.filter(login_account__is_active=True)
+            .select_related("department")
+            .order_by("name")
+        }
+
+
+class TaskProgressForm(BootstrapModelForm):
+    """员工使用：不能从表单修改任务标题、执行人等字段。"""
+
+    # ChoiceField 是一个用于处理“下拉选择框”（Select）或单选列表的字段。
+    # 限制用户只能从预先定义好的选项列表中选择一个值，如果用户提交了不在列表中的选项，表单验证就会报错。
+    status = forms.ChoiceField(
+        label="任务状态",
+        choices=(
+            (models.TaskManage.STATUS_IN_PROGRESS, "进行中"),
+            (models.TaskManage.STATUS_BLOCKED, "受阻"),
+            (models.TaskManage.STATUS_COMPLETED, "已完成"),
+        ),
+    )
+
+    progress=forms.IntegerField(
+        label="完成进度(%)",
+        min_value=0,
+        max_value=100
+    )
+
+    class Meta:
+        model=models.TaskProgressLog
+        fields=["status","progress","note"]
+        widgets={
+            "note":forms.Textarea(attrs={"rows":4}),
+        }
+        labels={
+            "note":"进度说明",
+        }
+
+    def clean(self):
+        cleaned_data=super().clean()
+
+        # 标记完成时，进度必须达到 100%。
+        if (
+            cleaned_data.get("status") == models.TaskManage.STATUS_COMPLETED
+            and cleaned_data.get("progress") != 100
+        ):
+            self.add_error("progress", "状态为已完成时，进度必须是 100%。")
+
+        return cleaned_data
+
+class TaskCancelForm(BootstrapForm):
+    """项目负责人取消任务时原因说明 """
+    reason=forms.CharField(
+        label="撤销说明",
+        widget=forms.Textarea(attrs={"rows":3}),
+    )
 
 
 class LoginForm(BootstrapForm):
@@ -391,6 +472,10 @@ class AccountResetModelForm(BootstrapModelForm):
 
 
 class AccountRoleForm(forms.ModelForm):
+
+    # ModelMultipleChoiceField专门用来处理 “多对多（ManyToManyField）” 或 “外键（ForeignKey，反向多选）” 关系的表单字段。
+    # 配合不同的 Widget（小部件） 来改变它的外观：
+    # 复选框组（CheckboxSelectMultiple）：最常见，渲染成一排并排的复选框，方便用户直接勾选多个。
     groups = forms.ModelMultipleChoiceField(
         label="角色",
         queryset=Group.objects.all(),
@@ -425,9 +510,10 @@ class AccountRoleForm(forms.ModelForm):
     def save(self, commit=True):
         account = super().save(commit)
         if account.employee_id:
-            regular_employee_group=Group.objects.get(name="RegularEmployee")
+            regular_employee_group = Group.objects.get(name="RegularEmployee")
             account.groups.add(regular_employee_group)
         return account
+
 
 class AvatarUploadForm(BootstrapForm):
     avatar = forms.ImageField(label="头像")
@@ -455,8 +541,8 @@ class EmployeeCreateForm(UserModelForm):
 
     # 跨字段校验
     def clean(self):
-        #显示调用父类clean方法的原因是，可以启用后续模型唯一性校验
-        #实际super().clean()就是self.cleaned_data
+        # 显示调用父类clean方法的原因是，可以启用后续模型唯一性校验
+        # 实际super().clean()就是self.cleaned_data
         cleaned_data = super().clean()
         password = cleaned_data.get("initial_password")
         confirm_password = cleaned_data.get("confirm_password")

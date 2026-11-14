@@ -8,7 +8,7 @@ class Command(BaseCommand):
     help = "Initialize RBAC roles and permissions"
 
     def handle(self, *args, **options):
-          # 每个角色的模型权限。未列出的权限不会授予。
+        # 每个角色的模型权限。未列出的权限不会授予。
         role_model_permissions = {
             "SuperAdmin": [
                 (models.Account, ["view"]),
@@ -25,24 +25,30 @@ class Command(BaseCommand):
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
             ],
-            "RegularEmployee":[
-                (models.Department,["view"]),
-                (models.Position,["view"])
+            "RegularEmployee": [
+                (models.Department, ["view"]),
+                (models.Position, ["view"]),
             ],
             # 暂时保留旧组，清掉它的通用读取权限。
             # 后续应按具体业务范围给只读用户授权。
             "ReadOnly": [],
         }
 
-        # 只有 SuperAdmin 可以分配角色和强制重置密码。
         role_custom_permissions = {
+            # 只有 SuperAdmin 可以分配角色和强制重置密码。
+            # 项目负责人在role_model_permissions中获得任务创建和变更权限，在此处获得更新与提交自己任务的自定义权限
+            # `RegularEmployee` 只获得查看和更新自己任务的自定义权限，不获得任务创建、编辑或删除权限。
             "SuperAdmin": [
-                (models.Account,"manage_account_roles"),
-                (models.Account,"reset_account_password"),
+                (models.Account, "manage_account_roles"),
+                (models.Account, "reset_account_password"),
             ],
-            "RegularEmployee":[
-                (models.TaskManage,"view_own_taskmanage"),
-            ]
+            "ProjectManager": [
+                (models.TaskManage, "update_own_taskmanage"),
+            ],
+            "RegularEmployee": [
+                (models.TaskManage, "view_own_taskmanage"),
+                (models.TaskManage, "update_own_taskmanage"),
+            ],
         }
 
         for group_name, model_rules in role_model_permissions.items():
@@ -60,7 +66,7 @@ class Command(BaseCommand):
                     )
                     permissions.append(permission)
 
-            for model,codename in role_custom_permissions.get(group_name, []):
+            for model, codename in role_custom_permissions.get(group_name, []):
                 content_type = ContentType.objects.get_for_model(model)
                 permission = Permission.objects.get(
                     content_type=content_type,
@@ -72,18 +78,16 @@ class Command(BaseCommand):
             group.permissions.set(permissions)
 
             self.stdout.write(
-                self.style.SUCCESS(
-                    f"{group_name}: 已设置 {len(permissions)} 项权限"
-                )
+                self.style.SUCCESS(f"{group_name}: 已设置 {len(permissions)} 项权限")
             )
 
         self.stdout.write(self.style.SUCCESS("RBAC 初始化完成"))
+
     #     # 1.创建角色(此处即权限组Group)
     #     superadmin, _ = Group.objects.get_or_create(name="SuperAdmin")
     #     hr_admin, _ = Group.objects.get_or_create(name="HRAdmin")
     #     business_admin, _ = Group.objects.get_or_create(name="BusinessAdmin")
     #     readonly, _ = Group.objects.get_or_create(name="ReadOnly")
-
 
     #     # 2.定义业务类型
     #     account_model = models.Account

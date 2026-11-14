@@ -62,10 +62,10 @@ urlpatterns = [
     path("department/edit/", department.department_edit),
     # path("department/batch/", department.department_batch),
     # 职位管理
-    path("position/lst/",position.position_lst),
-    path("position/add/",position.position_add),
-    path("position/<int:nid>/edit/",position.position_edit),
-    path("position/<int:nid>/status/",position.position_status),
+    path("position/lst/", position.position_lst),
+    path("position/add/", position.position_add),
+    path("position/<int:nid>/edit/", position.position_edit),
+    path("position/<int:nid>/status/", position.position_status),
     # 员工管理
     path("usr/lst/", usr.usr_lst),
     path("usr/edit/", usr.usr_edit),
@@ -77,7 +77,6 @@ urlpatterns = [
     path("usr/import/template/", employee_import.employee_import_template),
     path("usr/import/preview/", employee_import.employee_import_preview),
     path("usr/import/confirm/", employee_import.employee_import_confirm),
-
     # 管理员
     path("admin/lst/", admin.admin_lst),
     # path("admin/add/", admin.admin_add),
@@ -90,12 +89,28 @@ urlpatterns = [
     path("logout/", login.logout_ds),
     path("img/code/", login.img_code),
     # 任务管理
-    path("task/lst/", task.task_lst),
-    path("task/ajax/", task.task_ajax),
-    path("task/add/", task.task_add),
-    path("task/del/", task.task_del),
-    path("task/detail/", task.task_detail),
-    path("task/edit/", task.task_edit),
+    path("task/lst/", task.task_lst, name="task_lst"),
+    path("task/add/", task.task_add, name="task_add"),
+    path(
+        "task/<int:task_id>/",
+        task.task_detail,
+        name="task_detail",
+    ),
+    path(
+        "task/<int:task_id>/edit/",
+        task.task_edit,
+        name="task_edit",
+    ),
+    path(
+        "task/<int:task_id>/progress/",
+        task.task_progress,
+        name="task_progress",
+    ),
+    path(
+        "task/<int:task_id>/cancel/",
+        task.task_cancel,
+        name="task_cancel",
+    ),
     # 工单
     path("order/lst/", order.order_lst),
     path("order/change/", order.order_change),

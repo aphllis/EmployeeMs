@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 70rem">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">{{ task.title }}</h3>
+        <a class="btn btn-outline-secondary" href="{% url 'task_lst' %}">
+            返回任务列表
+        </a>
+    </div>
+
+    <div class="card mb-3">
+        <div class="card-header">任务信息</div>
+        <div class="card-body">
+            <p><strong>优先级：</strong>{{ task.get_level_display }}</p>
+            <p><strong>执行员工：</strong>{{ task.executor.name }}</p>
+            <p><strong>状态：</strong>{{ task.get_status_display }}</p>
+            <p><strong>完成进度：</strong>{{ task.progress }}%</p>
+            <p><strong>截止日期：</strong>
+                {{ task.due_date|date:"Y-m-d"|default:"—" }}
+            </p>
+            <p><strong>任务说明：</strong></p>
+            <div>{{ task.detail|linebreaks }}</div>
+        </div>
+    </div>
+
+    {% if can_update_progress %}
+    <div class="card mb-3">
+        <div class="card-header">提交进度</div>
+        <div class="card-body">
+            <form method="post" action="{% url 'task_progress' task.id %}">
+                {% csrf_token %}
+
+                {% for field in progress_form %}
+                <div class="mb-3">
+                    <label class="form-label" for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+                    {{ field }}
+                    {% for error in field.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                {% endfor %}
+
+                <button class="btn btn-primary" type="submit">提交进度</button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if can_cancel_task %}
+    <div class="card border-warning mb-3">
+        <div class="card-header">取消任务</div>
+        <div class="card-body">
+            <form method="post" action="{% url 'task_cancel' task.id %}">
+                {% csrf_token %}
+                <label class="form-label" for="{{ cancel_form.reason.id_for_label }}">
+                    取消原因
+                </label>
+                {{ cancel_form.reason }}
+                {% for error in cancel_form.reason.errors %}
+                <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+                <button class="btn btn-warning mt-2" type="submit">
+                    取消任务
+                </button>
+            </form>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="card">
+        <div class="card-header">进度记录</div>
+        <ul class="list-group list-group-flush">
+            {% for log in logs %}
+            <li class="list-group-item">
+                <div>
+                    <strong>{{ log.account.username }}</strong>
+                    <span class="text-muted">
+                        {{ log.created_at|date:"Y-m-d H:i" }}
+                    </span>
+                </div>
+                <div>
+                    {{ log.get_status_display }}，完成度 {{ log.progress }}%
+                </div>
+                <div>{{ log.note|linebreaks }}</div>
+            </li>
+            {% empty %}
+            <li class="list-group-item text-muted">暂无进度记录</li>
+            {% endfor %}
+        </ul>
+    </div>
+</div>
+{% endblock %}
