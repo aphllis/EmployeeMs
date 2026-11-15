@@ -2,7 +2,7 @@
 {% block content %}
 
 <div class="container" style="width: 80rem">
-    <div class="mb-2 d-flex align-items-center">
+    <div class="d-flex align-items-center gap-2 mb-2">
         <div class="me-auto">
             {% if can_add %}
             <a class="btn btn-success btn-sm" href="/usr/modelform/add/">
@@ -14,7 +14,7 @@
             {% endif %}
         </div>
 
-        <form method="get" class="d-flex">
+        <form method="get" class="d-flex align-items-center gap-2 ms-auto flex-nowrap">
             <input type="search" name="q" class="form-control" placeholder="搜索姓名、工号、部门或职位" value="{{ search_data }}">
             <button class="btn btn-outline-success" type="submit">
                 <i class="bi bi-search"></i>

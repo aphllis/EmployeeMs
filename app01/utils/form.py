@@ -275,11 +275,11 @@ class TaskAssignmentForm(BootstrapModelForm):
         super().__init__(*args, **kwargs)
 
         # 只允许把任务分配给有启用登录账号的员工。
-        self.fields["executor"].queryset = {
+        self.fields["executor"].queryset = (
             models.Employee.objects.filter(login_account__is_active=True)
             .select_related("department")
             .order_by("name")
-        }
+        )
 
 
 class TaskProgressForm(BootstrapModelForm):

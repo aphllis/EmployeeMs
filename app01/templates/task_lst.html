@@ -3,40 +3,34 @@
 {% block content %}
 <div class="container" style="max-width: 80rem">
 
-    <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
         {% if can_add_task %}
-        <a class="btn btn-success" href="{% url 'task_add' %}">
-            新建任务
+        <a class="btn btn-success btn-sm" href="{% url 'task_add' %}">
+            <i class="bi bi-plus-circle-fill"></i> 新建任务
         </a>
         {% endif %}
 
-        <form method="get" class="d-flex gap-2 ms-auto">
-            <input
-                class="form-control"
-                type="search"
-                name="q"
-                value="{{ search_data }}"
-                placeholder="搜索任务、员工或工号"
-            >
+        <form method="get" class="d-flex align-items-center gap-2 ms-auto flex-nowrap">
+            <input class="form-control" type="search" name="q" value="{{ search_data }}" placeholder="搜索任务、员工或工号"
+                style="width: 230px;">
 
             <select class="form-select" name="status">
                 <option value="">全部状态</option>
                 {% for value, label in status_choices %}
-                <option
-                    value="{{ value }}"
-                    {% if selected_status == value %}selected{% endif %}
-                >
+                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
             </select>
 
-            <button class="btn btn-outline-primary" type="submit">搜索</button>
+            <button class="btn btn-outline-success flex-shrink-0 text-nowrap" type="submit" aria-label="搜索">
+                <i class="bi bi-search"></i>
+            </button>
         </form>
     </div>
 
     <div class="card">
-        <div class="card-header">任务列表</div>
+        <div class="card-header"><i class="bi bi-list-ul"></i> 任务列表</div>
         <div class="table-responsive">
             <table class="table table-bordered table-hover text-center mb-0">
                 <thead>
@@ -62,17 +56,15 @@
                             {{ task.executor.name }}
                             {% if task.executor.department %}
                             <span class="text-muted">
-                               （{{ task.executor.department.title }}）
+                                （{{ task.executor.department.title }}）
                             </span>
                             {% endif %}
                         </td>
                         <td>{{ task.get_status_display }}</td>
                         <td>
-                            <div class="progress" role="progressbar"
-                                 aria-valuenow="{{ task.progress }}"
-                                 aria-valuemin="0" aria-valuemax="100">
-                                <div class="progress-bar"
-                                     style="width: {{ task.progress }}%">
+                            <div class="progress" role="progressbar" aria-valuenow="{{ task.progress }}"
+                                aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar" style="width: {{ task.progress }}%">
                                     {{ task.progress }}
                                 </div>
                             </div>
@@ -85,8 +77,7 @@
                         {% if can_change_task %}
                         <td>
                             {% if task.status != "completed" and task.status != "cancelled" %}
-                            <a class="btn btn-sm btn-primary"
-                               href="{% url 'task_edit' task.id %}">
+                            <a class="btn btn-sm btn-primary" href="{% url 'task_edit' task.id %}">
                                 编辑
                             </a>
                             {% endif %}
@@ -95,8 +86,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if can_change_task %}8{% else %}7{% endif %}"
-                            class="text-muted">
+                        <td colspan="{% if can_change_task %}8{% else %}7{% endif %}" class="text-muted">
                             暂无任务
                         </td>
                     </tr>

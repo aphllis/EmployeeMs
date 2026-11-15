@@ -212,7 +212,7 @@ class TaskManage(models.Model):
         permissions = [
             ("view_own_taskmanage", "Can view tasks assigned to the current employee"),
             (
-                "update_own_taskmange",
+                "update_own_taskmanage",
                 "Can submit progress for tasks assigned to the current employee",
             ),
         ]

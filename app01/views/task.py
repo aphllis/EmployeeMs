@@ -97,15 +97,6 @@ def task_lst(req):
         },
     )
 
-
-def task_ajax(req):
-    print(req.GET)
-    print(req.POST)
-    data_dict = {"status": True, "data": [11, 22, 33, 44]}
-    json_str = json.dumps(data_dict)
-    return HttpResponse(json_str)
-
-
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.add_taskmanage")
 def task_add(req):
@@ -121,7 +112,7 @@ def task_add(req):
             task.save()
 
             # 创建一条初始记录，之后可在详情页看到任务创立时间
-            models.TaskProgreeLog.objects.create(
+            models.TaskProgressLog.objects.create(
                 task=task,
                 account=account,
                 status=task.status,
@@ -293,11 +284,12 @@ def task_cancel(request, task_id):
     account = get_current_account(request)
 
     form = TaskCancelForm(data=request.POST)
-    task = get_object_or_404(
+
+    with transaction.atomic():
+        task = get_object_or_404(
         models.TaskManage.objects.select_for_update(),
         pk=task_id,
     )
-    with transaction.atomic():
         if task.status in (
             models.TaskManage.STATUS_COMPLETED,
             models.TaskManage.STATUS_CANCELLED,
