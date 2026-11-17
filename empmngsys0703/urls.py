@@ -55,12 +55,13 @@ urlpatterns = [
     ),
     # RESTFUL API DRF实现
     path("api/v2/", include(router.urls)),
+
     # 部门管理
     path("department/lst/", department.department_lst),
     path("department/add/", department.department_add),
     path("department/<int:nid>/status/", department.department_status),
     path("department/edit/", department.department_edit),
-    # path("department/batch/", department.department_batch),
+
     # 职位管理
     path("position/lst/", position.position_lst),
     path("position/add/", position.position_add),
@@ -84,10 +85,12 @@ urlpatterns = [
     # path("admin/<int:nid>/del/", admin.admin_del),
     path("admin/<int:nid>/reset/", admin.admin_reset),
     path("admin/<int:nid>/role/", admin.admin_role),
+
     # 登录
     path("login/", login.login_ds),
     path("logout/", login.logout_ds),
     path("img/code/", login.img_code),
+
     # 任务管理
     path("task/lst/", task.task_lst, name="task_lst"),
     path("task/add/", task.task_add, name="task_add"),
@@ -111,16 +114,32 @@ urlpatterns = [
         task.task_cancel,
         name="task_cancel",
     ),
-    # 工单
-    path("order/lst/", order.order_lst),
-    path("order/change/", order.order_change),
-    path("order/del/", order.order_del),
-    path("order/detail/", order.order_detail),
+
+    # 商务工单
+    path("order/lst/", order.order_lst, name="order_lst"),
+    path("order/add/", order.order_add, name="order_add"),
+    path(
+        "order/<int:order_id>/",
+        order.order_detail,
+        name="order_detail",
+    ),
+    path(
+        "order/<int:order_id>/edit/",
+        order.order_edit,
+        name="order_edit",
+    ),
+    path(
+        "order/<int:order_id>/status/",
+        order.order_status,
+        name="order_status",
+    ),
+    
     # 数据统计
     path("chart/lst/", chart.chart_lst),
     path("chart/bar/", chart.chart_bar),
     path("chart/pie/", chart.chart_pie),
     path("chart/line/", chart.chart_line),
+
     # 个人中心
     path("profile/", profile.profile),
     path("profile/password/", profile.change_password),

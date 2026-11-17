@@ -1,0 +1,75 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 70rem;">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="mb-0">{{ order.title }}</h3>
+        <a href="{% url 'order_lst' %}">
+            返回列表
+        </a>
+    </div>
+    <div class="card mb-3">
+        <div class="card-header">工单信息</div>
+        <div class="crad-body">
+            <p><strong>工单号：</strong>{{ order.oid }}</p>
+            <p><strong>项目：</strong>{{ order.project_name|default:"-"}}</p>
+            <p><strong>客户：</strong>{{ order.customer_name|default:"-"}}</p>
+            <p><strong>事项类型：</strong>{{ order.get_type_display }}</p>
+            <p><strong>状态：</strong>{{ order.get_status_display }}</p>
+            <p><strong>事项金额：</strong>{{ order.price }}</p>
+            <p><strong>累计回款：</strong>{{ order.received_amount }}</p>
+            <p><strong>预计回款日期：</strong>
+                {{ order.expected_payment_date|date:"Y-m-d"|default:"-" }}
+            </p>
+            <p><strong>说明：</strong></p>
+            <div>{{ order.detail|linebreaks }}</div>
+
+            {% if can_edit_order %}
+            <a href="{% url 'order_edit' order.id % }" class="btn btn-primary mt-2">编辑工单资料</a>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if can_update_status %}
+<div class="card mb-3">
+    <div class="card-header">更新处理状态</div>
+    <div class="crad-body">
+        <form action="{% url 'order_status' order.id %}">
+            {% csrf_token %}
+            {% for field in progress_form %}
+            <div class="mb-3">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                </label>
+                {{ field }}
+                {% for error in field.errors %}
+                <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+            <button class="btn btn-primary" type="submit">
+                提交处理记录
+            </button>
+        </form>
+    </div>
+</div>
+{% endif %}
+<div class="card">
+    <div class="card-header">处理记录</div>
+    <ul class="list-group list-group-flush">
+        {% for log in logs %}
+        <li class="list-group-item">
+            <strong>{{ log.account.username }}</strong>
+            <span class="text-muted">
+                {{ log.created_at|date:"Y-m-d H:i" }}
+            </span>
+            <div>{{ log.get_status_display }}</div>
+            <div>{{ log.note|linebreaks }}</div>
+        </li>
+        {% empty %}
+        <li class="list-group-item text-muted">暂无处理记录</li>
+        {% endfor %}
+    </ul>
+</div>
+</div>
+{% endblock%}

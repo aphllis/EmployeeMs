@@ -1,117 +1,232 @@
-import json
-from copy import copy
+from uuid import uuid4
+
 from random import randint
 from datetime import date
 
+from django.db.models import Q
+from django.db import transaction
+from django.utils import timezone
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.views.decorators.http import require_POST
-from django.shortcuts import render, HttpResponse, redirect, get_object_or_404
+from django.http import HttpResponseForbidden
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_POST, require_GET, require_http_methods
 
 from app01 import models
 from app01.utils.pagination import Pagination
-from app01.utils.form import BootstrapModelForm
-from app01.utils.permission import account_permission,get_current_account
+from app01.utils.form import OrderForm, OrderProgressForm
+from app01.utils.permission import account_permission, get_current_account
 
 # oid = date.today().strftime("%Y-%M-%D") + str(randint(1000, 9999))
 
 
-class OrderForm(BootstrapModelForm):
-    class Meta:
-        model = models.Order
-        fields = "__all__"
-        # 排除字段,后端获取
-        exclude = ["oid", "admin", "created_by"]
+def generate_order_code():
+    """生成不暴露数据库自增主键的工单号"""
+    while True:
+        code = f"SO{timezone.localdate():%Y%m%d}{uuid4().hex[:12]}"
+        if not models.Order.objects.filter(oid=code).exists():
+            return code
 
-@account_permission("app01.view_order")
-def order_lst(req):
-    form = OrderForm()
-    queryset = models.Order.objects.all().order_by("-id")
-    # 如果查询为空则直接渲染网页
-    if not queryset:
-        return render(req, "order_lst.html", {"form": form})
-    page_obj = Pagination(request=req, queryset=queryset)
-    context = {
-        "form": form,
-        "queryset": page_obj.page_queryset,
-        "page_str": page_obj.html()[0],
-        "goto_page_str": page_obj.html()[1],
-        "goto_page": page_obj.goto_page,
-    }
-    return render(req, "order_lst.html", context)
 
-@require_POST
-def order_change(req):
-    """新建订单（Ajax请求）"""
-    account=get_current_account(req)
-    if not account or not account.is_active:
-        return JsonResponse(
-            {"status":False,"error":"账号不存在或已禁用"},
-            status=403,
+def _order_detail_context(account, order, progress_form=None):
+    can_update_status = (
+        account.has_perm("app01.update_assigned_order")
+        and order.assignee_id == account.pk
+        and order.status
+        not in (
+            models.Order.STATUS_COMPLETED,
+            models.Order.STATUS_REJECTED,
+            models.Order.STATUS_CANCELLED,
         )
-    
-    # 浅复制req.POST,便于修改query_dict 为mutable
-    query_dict = req.POST.copy()
+    )
 
-    edit_id=req.POST.get("edit_id")
-
-    # 获得edit_id的对应值为数组，数组的元素值为前端发来的edit_id对应值
-    query_dict.pop("edit_id", None)
-
-    # 判断数组元素值即edit_id对应值是否为空，如果为空，则以新建模式保存到数据库，否则以编辑模式保存到数据库
-    if edit_id:
-        if not account.has_perm("app01.change_order"):
-            return JsonResponse(
-                {"status":False,"error":"无工单修改权限"},
-                status=403,
+    return {
+        "order": order,
+        "logs": order.progress_log.select_related("account").all(),
+        "can_edit_order": account.has_perm("app01.change_order"),
+        "can_update_status": can_update_status,
+        "progress_form": (
+            progress_form
+            if progress_form is not None
+            else (
+                OrderProgressForm(initial={"status": order.status})
+                if can_update_status
+                else None
             )
-        row_obj=get_object_or_404(models.Order,pk=edit_id)
-        form=OrderForm(data=query_dict,instance=row_obj)
+        ),
+    }
+
+
+@require_POST
+def order_lst(req):
+    """工单列表。拥有查看权限的项目负责人和商务人员可查看全部工单"""
+    account = get_current_account(req)
+    search_data = req.GET.get("q", "").strip()
+    selected_type = req.GET.get("type", "").strip()
+    selected_status = req.GET.get("status", "").strip()
+
+    queryset = models.Order.objects.select_related(
+        "assignee",
+        "assignee__employee",
+        "created_by",
+    )
+
+    if search_data:
+        queryset = queryset.filter(
+            Q(oid__icontains=search_data)
+            | Q(title__icontains=search_data)
+            | Q(project_name__icontains=search_data)
+            | Q(customer_name__icontains=search_data)
+            | Q(assignee__username__icontains=search_data)
+            | Q(assignee__employee__name__icontains=search_data)
+        )
+
+    valid_types = {str(value) for value, _ in models.Order.TYPE_CHOICES}
+    if selected_type in valid_types:
+        queryset = queryset.filter(type=int(selected_type))
     else:
-        if not account.has_perm("app01.add_order"):
-            return JsonResponse(
-                {"status":False,"error":"无工单新增权限"},
-                status=403,
-            )
-        form=OrderForm(data=query_dict)
-    if form.is_valid():
-        order=form.save(commit=False)
-        if not edit_id:
-            order.oid=date.today().strftime("%Y%m%d")+str(randint(1000,9999))
-            order.created_by=account
+        selected_type = ""
 
-        order.save()
-        return JsonResponse({"status":True})
-    return JsonResponse(
-        {"status":False,"error":form.errors},
-        status=400,
+    valid_statuses = {str(value) for value, _ in models.Order.STATUS_CHOICES}
+    if selected_status in valid_statuses:
+        queryset = queryset.filter(status=int(selected_status))
+    else:
+        selected_status = ""
+
+    if queryset.exists():
+        page = Pagination(request=req, queryset=queryset, page_size=10)
+        page_queryset = page.page_queryset
+        page_str, goto_page_str = page.html()
+    else:
+        page_queryset = []
+        page_str = ""
+        goto_page_str = ""
+
+    return render(
+        req,
+        "order_lst.html",
+        {
+            "queryset": page_queryset,
+            "page_str": page_str,
+            "goto_page_str": goto_page_str,
+            "search_data": search_data,
+            "selected_type": selected_type,
+            "selected_status": selected_status,
+            "type_choices": models.Order.TYPE_CHOICES,
+            "status_choices": models.Order.STATUS_CHOICES,
+            "can_add_order": account.has_perm("app01.add_order"),
+            "can_change_order": account.has_perm("app01.change_order"),
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@account_permission("app01.add_order")
+def order_add(req):
+    form = OrderForm(data=req.POST or None)
+
+    if req.method == "POST" and form.is_valid():
+        account = get_current_account(req)
+        with transaction.atomic():
+            order = form.save(commit=False)
+            order.oid = generate_order_code()
+            order.created_by = account
+            order.save()
+
+            models.OrderProgressLog.objects.create(
+                order=order, account=account, status=order.status, note="创建工单"
+            )
+        return redirect("order_detail",order_id=order.pk)
+    return render(
+        req,
+        "order_form.html",
+        {"form":form,"page_title":"新建商务工单"}
+    )
+
+
+@require_http_methods(["GET","POST"])
+@account_permission("app01.change_order")
+def order_edit(req,order_id):
+    # 根据主键获得数据库的数据
+    order=get_object_or_404(models.Order,pk=order_id)
+    # 将数据库旧数据，用户提交数据，表单三者绑定
+    # instance=order,告诉modelform为修改操作，而不是新建,所以在form.save()时为update而不是insert
+    form=OrderForm(data=req.POST or None,instance=order)
+    if req.method=="POST" and form.is_valid():
+        form.save()
+        return redirect("order_detail",order_id=order.pk)
+    return render(
+        req,
+        "order_form.html",
+        {
+            "form":form,
+            "page_title":"编辑商务工单",
+            "order":order
+        }
+    )
+
+@require_GET
+@account_permission("app01.view_order")
+def order_detail(req,order_id):
+    account=get_current_account(req)
+    order=get_object_or_404(
+        models.Order.objects.select_related(
+            "assignee",
+            "assignee__employee",
+            "created_by"
+        ),
+        pk=order_id
+    )
+    return render(
+        req,
+        "order_detail.html",
+        _order_detail_context(account,order)
     )
 
 @require_POST
-@account_permission("app01.delete_order")
-def order_del(req):
-    uid = req.POST.get("uid")
-    exist = models.Order.objects.filter(id=uid).exists()
-    if not exist:
-        return JsonResponse({"status": False, "error": "数据不存在"})
-    models.Order.objects.filter(id=uid).delete()
-    return JsonResponse({"status": True})
+@account_permission("app01.update_assigned_order")
+def order_status(req,order_id):
+    """只允许被指派的负责人更新状态；每次更新都写入日志"""
+    account=get_current_account(req)
+    form=OrderProgressForm(data=req.POST)
+    with transaction.atomic():
+        order=get_object_or_404(
+            # 排它锁
+            models.Order.objects.select_for_update(),
+            pk=order_id
+        )
+        # 拥有模型级权限不代表可以修改任意工单
+        if order.assignee_id !=account.pk:
+            return HttpResponseForbidden("非工单负责人")
 
+        if order.status in (
+            models.Order.STATUS_CANCELLED,
+            models.Order.STATUS_COMPLETED,
+            models.Order.STATUS_REJECTED
+        ):
+            return HttpResponseForbidden("已结束工单不能继续处理")
+        if form.is_valid():
+            log=form.save(commit=False)
+            log.order=order
+            log.account=account
 
-@account_permission("app01.view_order")
-def order_detail(req):
-    # queryset=[obj,obj,obj] 对象数组
-    # queryset=models.Order.objects.all()
-    # queryset=[{"id":值,"title":值,"price":值,"status":值,"admin":值},{...}]字典数组
-    # queryset=models.Order.objects.all().values("id","title","price","status","admin")
-    # queryset=[(("id",值),("title",值),("price",值),("status",值),("admin",值)),(...)]元组数组
-    # queryset=models.Order.objects.all().values_list("id","title","price","status","admin")
+            order.status=log.status
+            order.save(update_fields=["status","updated_at"])
+            log.save()
 
-    uid = req.GET.get("uid")
-    print(req.GET)
-    row_obj = (
-        models.Order.objects.filter(id=uid).values("title", "price", "status").first()
+            return redirect("order_detail",order_id=order.pk)
+
+    # 表单无效时,保留用户输入并显示错误
+    order=get_object_or_404(
+        models.Order.objects.select_related(
+            "assignee",
+            "assignee__employee",
+            "created_by"
+        ),
+        pk=order_id,
     )
-    if not row_obj:
-        return JsonResponse({"status": False, "error": "订单不存在"})
-    return JsonResponse({"status": True, "data": row_obj})
+    return render(
+        req,
+        "order_detail.html",
+        _order_detail_context(account,order,progress_form=form),
+        status=400
+    )

@@ -331,6 +331,90 @@ class TaskCancelForm(BootstrapForm):
         widget=forms.Textarea(attrs={"rows":3}),
     )
 
+class OrderForm(BootstrapModelForm):
+    """ 商务人员编辑工单资料和指派对象 """
+    price=forms.DecimalField(
+        label="事项金额",
+        min_value=0,
+        max_digits=12,
+        decimal_places=2,
+    )
+
+    received_amount=forms.DecimalField(
+        label="累计回款",
+        min_value=0,
+        max_digits=12,
+        decimal_places=2
+    )
+
+    class Meta:
+        model=models.Order
+        fields=[
+            "title",
+            "project_name",
+            "customer_name",
+            "type",
+            "price",
+            "received_amount",
+            "expected_payment_date",
+            "assignee",
+            "detail",
+        ]
+        widgets={
+            "expected_payment_date":forms.DateInput(
+                attrs={"type":"date"}
+            ),
+            "detail":forms.Textarea(attrs={"rows":4})
+        }
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # 负责人必须是启用账号，且关联员工，并属于商务或项目负责人角色。
+        self.fields["assignee"].required=True
+        self.fields["assignee"].queryset=(
+            models.Account.objects
+            .filter(
+                is_active=True,
+                employee__isnull=False,
+                groups__name__in=["BusinessAdmin","ProjectManger"]
+            )
+            .distinct()
+            .order_by("username")
+        )
+
+    def clean(self):
+        cleaned_data=super().clean()
+        price=cleaned_data.get("price")
+        received_amount=cleaned_data.get("received_amount")
+
+        if (
+            price is not None
+            and received_amount is not None
+            and received_amount>price
+        ):
+            self.add_error(
+                "received_amount",
+                "累计回款不可超过事项金额",
+            )
+        return cleaned_data
+
+class OrderProgressForm(BootstrapModelForm):
+     """工单负责人更新处理状态并留下说明"""
+     status=forms.TypedChoiceField(
+         label="处理状态",
+         choices=models.Order.STATUS_CHOICES,
+         coerce=int,
+     )
+     class Meta:
+         model=models.OrderProgressLog
+         fields=["status","note"]
+         # 前端渲染控件
+         widgets={
+             "note":forms.Textarea(attrs={"rows":3}),
+         }
+         labels={
+             "note":"处理说明"
+         }
 
 class LoginForm(BootstrapForm):
     username = forms.CharField(

@@ -24,6 +24,7 @@ class Command(BaseCommand):
             ],
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
+                (models.Order,["view"]),
             ],
             "RegularEmployee": [
                 (models.Department, ["view"]),
@@ -44,6 +45,10 @@ class Command(BaseCommand):
             ],
             "ProjectManager": [
                 (models.TaskManage, "update_own_taskmanage"),
+                (models.Order,"update_assigned_order"),
+            ],
+            "BusinessAdmin":[
+                (models.Order,"update_assigned_order"),
             ],
             "RegularEmployee": [
                 (models.TaskManage, "view_own_taskmanage"),

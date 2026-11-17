@@ -256,50 +256,130 @@ class TaskProgressLog(models.Model):
 
 
 class Order(models.Model):
-    """项目商务工单"""
+    """项目商务工单,金额记录事项金额及累计已回款金额"""
 
-    oid = models.CharField(verbose_name="工单号", max_length=64, unique=True)
-    title = models.CharField(verbose_name="事项名称", max_length=64)
-    price = models.DecimalField(
-        verbose_name="金额", max_digits=12, decimal_places=2, default=Decimal("0")
-    )
-    type_choices = (
+    TYPE_CHOICES = (
         (1, "项目报价"),
         (2, "合同变更"),
         (3, "设计变更"),
         (4, "收款/开票"),
         (5, "其他商务事项"),
     )
-    type = models.SmallIntegerField(
-        verbose_name="事项类型", choices=type_choices, default=5
+
+    STATUS_PENDING = 1
+    STATUS_PROCESSING = 2
+    STATUS_COMPLETED = 3
+    STATUS_REJECTED = 4
+    STATUS_CANCELLED = 5
+
+    STATUS_CHOICES = (
+        (STATUS_PENDING, "待处理"),
+        (STATUS_PROCESSING, "处理中"),
+        (STATUS_COMPLETED, "已完成"),
+        (STATUS_REJECTED, "已驳回"),
+        (STATUS_CANCELLED, "已取消"),
     )
-    status_choices = (
-        (1, "待处理"),
-        (2, "处理中"),
-        (3, "已完成"),
-        (4, "已驳回"),
-    )
-    status = models.SmallIntegerField(
-        verbose_name="处理状态", choices=status_choices, default=1
-    )
-    admin = models.ForeignKey(
-        verbose_name="负责人",
-        to=Admin,
-        to_field="id",
-        on_delete=models.CASCADE,
-        null=True,
+    oid = models.CharField(verbose_name="工单号", max_length=64, unique=True)
+    title = models.CharField(verbose_name="事项名称", max_length=64)
+
+    # 暂时用文本记录项目和客户，以后建立project,customer模型时迁移为外键
+    project_name = models.CharField(
+        verbose_name="项目名称",
+        max_length=128,
         blank=True,
     )
-    detail = models.TextField(verbose_name="详细说明", blank=True)
+    customer_name = models.CharField(
+        verbose_name="客户名称", max_length=128, blank=True
+    )
+    type = models.SmallIntegerField(
+        verbose_name="事项类型",
+        choices=TYPE_CHOICES,
+        default=5,
+    )
+    status = models.SmallIntegerField(
+        verbose_name="处理状态", choices=TYPE_CHOICES, default=STATUS_PENDING
+    )
+    # 事项或合同金额；received_amount 是该事项累计已回款金额。
+    price = models.DecimalField(
+        verbose_name="金额", 
+        max_digits=12, 
+        decimal_places=2,
+        default=Decimal("0")
+    )
 
-    created_by = models.ForeignKey(
+    receive_amount = models.DecimalField(
+        verbose_name="累计回款", 
+        max_digits=12, 
+        decimal_places=2, 
+        default=Decimal("0")
+    )
+
+    expected_payment_date = models.DateField(
+        verbose_name="预计回款日期", null=True, blank=True
+    )
+
+
+    # 工单负责人统一使用 Account
+    assignee = models.ForeignKey(
+        "Account",
+        verbose_name="负责人",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="assigned_orders",
+    )
+    created_by=models.ForeignKey(
         "Account",
         verbose_name="创建账号",
         on_delete=models.PROTECT,
-        related_name="created_orders",
         null=True,
         blank=True,
+        related_name="created_orders",
     )
+    detail = models.TextField(verbose_name="详细说明", blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        permissions = [
+            (
+                "update_assigned_order",
+                "Can update the status of orders assigned to the current account",
+            )
+        ]
+
+    def __str__(self):
+        return f"{self.oid} - {self.title}"
+
+
+class OrderProgressLog(models.Model):
+    """工单状态变更记录；新增一条记录，不覆盖以前的处理说明"""
+
+    order = models.ForeignKey(
+        Order,
+        verbose_name="工单",
+        on_delete=models.PROTECT,
+        related_name="progress_logs",
+    )
+
+    account = models.ForeignKey(
+        "Account",
+        verbose_name="操作账号",
+        related_name="progress_logs",
+    )
+    status = models.SmallIntegerField(
+        verbose_name="变更后状态",
+        choices=Order.STATUS_CHOICES,
+    )
+    note = models.TextField(verbose_name="处理说明")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.order.oid} - {self.account.username}"
 
 
 class ProfileInfo(models.Model):
