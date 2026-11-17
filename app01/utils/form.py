@@ -376,7 +376,7 @@ class OrderForm(BootstrapModelForm):
             .filter(
                 is_active=True,
                 employee__isnull=False,
-                groups__name__in=["BusinessAdmin","ProjectManger"]
+                groups__name__in=["BusinessAdmin","ProjectManager"]
             )
             .distinct()
             .order_by("username")

@@ -297,7 +297,7 @@ class Order(models.Model):
         default=5,
     )
     status = models.SmallIntegerField(
-        verbose_name="处理状态", choices=TYPE_CHOICES, default=STATUS_PENDING
+        verbose_name="处理状态", choices=STATUS_CHOICES, default=STATUS_PENDING
     )
     # 事项或合同金额；received_amount 是该事项累计已回款金额。
     price = models.DecimalField(
@@ -307,7 +307,7 @@ class Order(models.Model):
         default=Decimal("0")
     )
 
-    receive_amount = models.DecimalField(
+    received_amount = models.DecimalField(
         verbose_name="累计回款", 
         max_digits=12, 
         decimal_places=2, 
@@ -366,6 +366,7 @@ class OrderProgressLog(models.Model):
     account = models.ForeignKey(
         "Account",
         verbose_name="操作账号",
+        on_delete=models.PROTECT,
         related_name="progress_logs",
     )
     status = models.SmallIntegerField(

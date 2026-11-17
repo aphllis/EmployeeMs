@@ -37,7 +37,6 @@ def test_account_can_create_employee():
         "/api/v2/employees/",
         {
             "name": "测试员工",
-            "password": "123456",
             "age": 30,
             "entry_date": "2026-09-21",
             "department": department.id,
@@ -74,7 +73,6 @@ def test_account_can_get_employee_list():
     # 3.准备两条员工数据
     models.Employee.objects.create(
         name="张三",
-        password="123456",
         age=28,
         entry_date="2026-09-01",
         department=department,
@@ -82,7 +80,6 @@ def test_account_can_get_employee_list():
     )
     models.Employee.objects.create(
         name="李四",
-        password="123456",
         age=30,
         entry_date="2026-09-01",
         department=department,
@@ -131,7 +128,6 @@ def test_account_can_get_employee_detail():
 
     employee = models.Employee.objects.create(
         name="王五",
-        password="123456",
         age=32,
         entry_date="2026-09-21",
         department=department,
@@ -168,7 +164,6 @@ def test_account_can_update_employee():
     department = models.Department.objects.create(title="测试部门")
     employee = models.Employee.objects.create(
         name="王五",
-        password="123456",
         age=32,
         entry_date="2026-09-21",
         department=department,
@@ -214,7 +209,6 @@ def test_account_can_delete_employee():
 
     employee = models.Employee.objects.create(
         name="waitfordelete",
-        password="123456",
         age=30,
         entry_date="2026-09-03",
         department=department,

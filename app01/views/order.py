@@ -41,7 +41,7 @@ def _order_detail_context(account, order, progress_form=None):
 
     return {
         "order": order,
-        "logs": order.progress_log.select_related("account").all(),
+        "logs": order.progress_logs.select_related("account").all(),
         "can_edit_order": account.has_perm("app01.change_order"),
         "can_update_status": can_update_status,
         "progress_form": (
@@ -56,7 +56,8 @@ def _order_detail_context(account, order, progress_form=None):
     }
 
 
-@require_POST
+@require_GET
+@account_permission("app01.view_order")
 def order_lst(req):
     """工单列表。拥有查看权限的项目负责人和商务人员可查看全部工单"""
     account = get_current_account(req)

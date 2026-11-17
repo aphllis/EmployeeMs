@@ -9,7 +9,7 @@
     </div>
     <div class="card mb-3">
         <div class="card-header">工单信息</div>
-        <div class="crad-body">
+        <div class="card-body">
             <p><strong>工单号：</strong>{{ order.oid }}</p>
             <p><strong>项目：</strong>{{ order.project_name|default:"-"}}</p>
             <p><strong>客户：</strong>{{ order.customer_name|default:"-"}}</p>
@@ -33,8 +33,8 @@
 {% if can_update_status %}
 <div class="card mb-3">
     <div class="card-header">更新处理状态</div>
-    <div class="crad-body">
-        <form action="{% url 'order_status' order.id %}">
+    <div class="card-body">
+        <form action="{% url 'order_status' order.id %}" method="post">
             {% csrf_token %}
             {% for field in progress_form %}
             <div class="mb-3">

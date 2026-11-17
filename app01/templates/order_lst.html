@@ -14,7 +14,15 @@
             <select name="type" class="form-select">
                 <option value="">全部类型</option>
                 {% for value, label in type_choices %}
-                <option value="{{ value }}" {% if selected_type==value|stringformat:"s" %}selected{& endif &}>
+                <option value="{{ value }}" {% if selected_type==value|stringformat:"s" %}selected{% endif %}>
+                    {{ label }}
+                </option>
+                {% endfor %}
+            </select>
+            <select class="form-select" name="status">
+                <option value="">全部状态</option>
+                {% for value, label in status_choices %}
+                <option value="{{ value }}" {% if selected_status==value|stringformat:"s" %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
