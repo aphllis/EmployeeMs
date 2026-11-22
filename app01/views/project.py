@@ -134,9 +134,12 @@ def project_edit(req, project_id):
         "form.html",
         {
             "form": form,
-            "page_title": "新建项目",
-            "submit_label": "创建项目",
-            "cancel_url": reverse("project_lst"),
+            "page_title": title,
+            "submit_label": "保存修改",
+            "cancel_url": reverse(
+                "project_detail",
+                kwargs={"project_id": project.pk},
+            ),
             "cancel_label": "返回项目列表",
             "form_max_width": "65rem",
         },
@@ -153,6 +156,7 @@ def project_detail(req, project_id):
     )
 
     # 普通员工只能看到自己的项目任务。
+    
     tasks = project.tasks.select_related("executor").all()
     # 如果没有全局查看任务权限，则只能查看自己的项目任务
     if not account.has_perm("app01.view_taskmanage"):
@@ -236,14 +240,14 @@ def project_resource_add(req, project_id):
 
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.change_projectresource")
-def project_resource_edit(req, resource_id,project_id):
+def project_resource_edit(req,  project_id,resource_id):
     # select_related 会联查所属项目，后面读取 resource.project 不会再单独查询。
     resource = get_object_or_404(
         models.ProjectResource.objects.select_related("project"),
         pk=resource_id,
-        project_id=project_id
+        project_id=project_id,
     )
-    project=resource.project
+    project = resource.project
     form = ProjectResourceForm(data=req.POST or None, instance=resource)
     if req.method == "POST" and form.is_valid():
         form.save()
@@ -279,7 +283,6 @@ def project_payment_add(req, project_id):
         payment.recorded_by = get_current_account(req)
         payment.save()
         return redirect("project_detail", project_id=project.pk)
-
 
     return render(
         req,

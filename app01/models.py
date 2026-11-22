@@ -153,12 +153,12 @@ class Employee(models.Model):
 
 class Project(models.Model):
     """项目台账，保存项目相关信息、阶段和设计要求"""
-    TPYE_CHOICES = (
+    TYPE_CHOICES = (
         ("architecture", "建筑设计"),
         ("interior", "室内设计"),
         ("landscape", "景观设计"),
         ("planning", "规划设计"),
-        ("oter", "其他"),
+        ("other", "其他"),
     )
     # 阶段 描述项目工作处于哪个设计环节
     STAGE_CHOICES = (
@@ -182,7 +182,7 @@ class Project(models.Model):
     project_type = models.CharField(
         verbose_name="项目类型",
         max_length=32,
-        choices=TPYE_CHOICES,
+        choices=TYPE_CHOICES,
     )
     stage = models.CharField(
         verbose_name="项目阶段",

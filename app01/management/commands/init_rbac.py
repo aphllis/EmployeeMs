@@ -28,9 +28,9 @@ class Command(BaseCommand):
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
                 (models.Order, ["view"]),
-                (models.Project, ["view", "add", "change"]),
+                (models.Project, ["view"]),
                 (models.ProjectResource, ["view", "add", "change"]),
-                (models.ProjectPayment, ["view", "add", "change"]),
+                (models.ProjectPayment, ["view"]),
             ],
             "RegularEmployee": [
                 (models.Department, ["view"]),

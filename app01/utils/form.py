@@ -1,5 +1,5 @@
 from pathlib import PureWindowsPath, PurePosixPath
-
+from decimal import Decimal
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -337,7 +337,7 @@ class ProjectPaymentForm(BootstrapModelForm):
         model = models.ProjectPayment
         fields = ["source_order", "amount", "received_on", "note"]
         widgets = {
-            "received_on": forms.DateField(attrs={"type": "date"}),
+            "received_on": forms.DateInput(attrs={"type": "date"}),
             "note": forms.Textarea(attrs={"rows": 3}),
         }
 
@@ -498,9 +498,9 @@ class OrderForm(BootstrapModelForm):
             "detail": forms.Textarea(attrs={"rows": 4}),
         }
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, received_total=Decimal("0.00"),**kwargs):
         super().__init__(*args, **kwargs)
-
+        self.received_total = received_total
         # 负责人必须是启用账号，且关联员工，并属于商务或项目负责人角色。
         self.fields["assignee"].required = True
         self.fields["assignee"].queryset = (
@@ -521,15 +521,13 @@ class OrderForm(BootstrapModelForm):
     def clean(self):
         cleaned_data = super().clean()
         price = cleaned_data.get("price")
-        received_amount = cleaned_data.get("received_amount")
-
         if (
             price is not None
-            and received_amount is not None
-            and received_amount > price
+            and self.received_total is not None
+            and self.received_total > price
         ):
             self.add_error(
-                "received_amount",
+                "received_total",
                 "累计回款不可超过事项金额",
             )
         return cleaned_data

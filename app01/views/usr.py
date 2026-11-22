@@ -104,7 +104,7 @@ def usr_edit(req, nid):
         # 注意，filter()方法返回的永远是queryset集合，本身不触发数据库查询
         # 只有用到first() 或者[0]或者遍历打印时才会触发数据库查询
         form = UserModelForm(instance=row_obj)
-        return render(req, "form.html", {"form": form, "title": "编辑用户"})
+        return render(req, "form.html", {"form": form, "title": "编辑员工"})
     # 与添加用户不同的是需要通过行对象的获取告诉django数据应该在其上更新
     form = UserModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
@@ -112,7 +112,7 @@ def usr_edit(req, nid):
         # form.instance.field_name=value
         form.save()
         return redirect("/usr/lst/")
-    return render(req, "usr_edit.html", {"form": form, "title": "编辑用户"})
+    return render(req, "form.html", {"form": form, "title": "编辑员工"})
 
 
 @require_POST

@@ -130,7 +130,7 @@
                         <td>
                             <a
                                 class="btn btn-sm btn-outline-primary"
-                                href="{% url 'project_resource_edit' resource.id %}"
+                                href="{% url 'project_resource_edit' project_id=project.pk resource_id=resource.pk %}"
                             >
                                 编辑
                             </a>

@@ -1,10 +1,9 @@
 from uuid import uuid4
-
+from decimal import Decimal
 from django.urls import reverse
-from django.db.models import Q
+from django.db.models import Q, Sum
 from django.db import transaction
 from django.utils import timezone
-from django.http import JsonResponse
 from django.http import HttpResponseForbidden
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.decorators.http import require_POST, require_GET, require_http_methods
@@ -80,7 +79,7 @@ def order_lst(req):
             | Q(project__name__icontains=search_data)
             | Q(project__customer_name__icontains=search_data)
         )
-
+    queryset = queryset.annotate(received_total=Sum("project__payments__amount"))
     valid_types = {str(value) for value, _ in models.Order.TYPE_CHOICES}
     if selected_type in valid_types:
         queryset = queryset.filter(type=int(selected_type))
@@ -155,10 +154,14 @@ def order_add(req):
 @account_permission("app01.change_order")
 def order_edit(req, order_id):
     # 根据主键获得数据库的数据
-    order = get_object_or_404(models.Order, pk=order_id)
+    order = get_object_or_404(
+        models.Order.objects.annotate(received_total=Sum("project__payments__amount")),
+        pk=order_id,
+    )
+
     # 将数据库旧数据，用户提交数据，表单三者绑定
     # instance=order,告诉modelform为修改操作，而不是新建,所以在form.save()时为update而不是insert
-    form = OrderForm(data=req.POST or None, instance=order)
+    form = OrderForm(data=req.POST or None, received_total=order.received_total or Decimal("0.00"),instance=order)
     if req.method == "POST" and form.is_valid():
         form.save()
         return redirect("order_detail", order_id=order.pk)
@@ -182,8 +185,8 @@ def order_detail(req, order_id):
     account = get_current_account(req)
     order = get_object_or_404(
         models.Order.objects.select_related(
-            "assignee", "assignee__employee", "created_by"
-        ),
+            "project", "assignee", "assignee__employee", "created_by"
+        ).annotate(received_total=Sum("project__payments__amount")),
         pk=order_id,
     )
     return render(req, "order_detail.html", _order_detail_context(account, order))

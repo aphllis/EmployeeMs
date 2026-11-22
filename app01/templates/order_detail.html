@@ -11,12 +11,12 @@
         <div class="card-header">工单信息</div>
         <div class="card-body">
             <p><strong>工单号：</strong>{{ order.oid }}</p>
-            <p><strong>项目：</strong>{{ order.project_name|default:"-"}}</p>
-            <p><strong>客户：</strong>{{ order.customer_name|default:"-"}}</p>
+            <p><strong>项目：</strong>{{ order.project.name|default:"-"}}</p>
+            <p><strong>客户：</strong>{{ order.project.customer_name|default:"-"}}</p>
             <p><strong>事项类型：</strong>{{ order.get_type_display }}</p>
             <p><strong>状态：</strong>{{ order.get_status_display }}</p>
             <p><strong>事项金额：</strong>{{ order.price }}</p>
-            <p><strong>累计回款：</strong>{{ order.received_amount }}</p>
+            <p><strong>累计回款：</strong>{{ order.received_total|default_if_none:"0"|floatformat:2 }}</p>
             <p><strong>预计回款日期：</strong>
                 {{ order.expected_payment_date|date:"Y-m-d"|default:"-" }}
             </p>
@@ -24,7 +24,7 @@
             <div>{{ order.detail|linebreaks }}</div>
 
             {% if can_edit_order %}
-            <a href="{% url 'order_edit' order.id % }" class="btn btn-primary mt-2">编辑工单资料</a>
+            <a href="{% url 'order_edit' order_id=order.pk %}" class="btn btn-primary mt-2">编辑工单资料</a>
             {% endif %}
         </div>
     </div>

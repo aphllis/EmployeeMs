@@ -55,13 +55,13 @@
                     <tr>
                         <td>{{ order.oid }}</td>
                         <td>
-                            {{order.project_name|default:"-"}} /
-                            {{order.customer_name|default:"-"}}
+                            {{order.project.name|default:"-"}} /
+                            {{order.project.customer_name|default:"-"}}
                         </td>
                         <td>{{ order.title }}</td>
                         <td>{{ order.get_type_display }}</td>
                         <td>{{ order.price }}</td>
-                        <td>{{ order.received_amount }}</td>
+                        <td>{{ order.received_total|default_if_none:"0"|floatformat:2 }}</td>
                         <td>{{ order.assignee.username|default:"未指派"}}</td>
                         <td>{{ order.get_status_display }}</td>
                         <td>

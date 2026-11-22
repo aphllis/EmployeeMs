@@ -10,8 +10,10 @@
         {% endif %}
         <form method="get" class="d-flex gap-2 ms-auto">
             <input type="search" class="form-control" name="q" value="{{ search }}" placeholder="搜索项目编号、名称或客户">
-            <button class="btn btn-outline-primary" type="submit"></button>
-            <i class="bi bi-search"></i>搜索
+            <button class="btn btn-outline-primary" type="submit">
+                <i class="bi bi-search"></i>
+            </button>
+
         </form>
     </div>
 
@@ -55,7 +57,7 @@
                             </span>
                             {% else %}
                             <span class="badge text-bg-secondary">
-                                {{ project.get_stage_display }}
+                                {{ project.get_status_display }}
                             </span>
                             {% endif %}
                         </td>
@@ -63,7 +65,8 @@
                             {{ project.manager.username|default:"待指派"}}
                         </td>
                         <td>
-                            <a class="btn btn-sm btn-outline-primary" href="{url 'project_detail' project.id}">查看</a>
+                            <a class="btn btn-sm btn-outline-primary"
+                                href="{% url 'project_detail' project.id %}">查看</a>
                         </td>
 
                     </tr>
