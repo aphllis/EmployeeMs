@@ -1,0 +1,76 @@
+{% extends "layout.html" %}
+
+{% block css %}
+    {{ block.super }}
+    {{ form.media.css }}
+{% endblock %}
+
+{% block content %}
+<div class="container py-4"
+     style="max-width: {{ form_max_width|default:'65rem' }};">
+    <div class="card">
+        <div class="card-header">
+            {{ page_title|default:title|default:"编辑信息" }}
+        </div>
+
+        <div class="card-body">
+            <form method="post"
+                  {% if form_enctype %}enctype="{{ form_enctype }}"{% endif %}
+                  novalidate>
+                {% csrf_token %}
+                <!-- 隐藏字段直接输出，可见字段放入bootstrap样式区块 -->
+                {% for field in form %}
+                    {% if field.is_hidden %}
+                        {{ field }}
+                    {% else %}
+                        <div class="mb-3">
+                            <label class="form-label"
+                                   for="{{ field.id_for_label }}">
+                                {{ field.label }}
+                                {% if field.field.required %}
+                                    <span class="text-danger">*</span>
+                                {% endif %}
+                            </label>
+
+                            {{ field }}
+                            <!-- 字段设置帮助说明时显示 -->
+                            {% if field.help_text %}
+                                <div class="form-text">
+                                    {{ field.help_text }}
+                                </div>
+                            {% endif %}
+
+                            {% for error in field.errors %}
+                                <div class="text-danger small">
+                                    {{ error }}
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endfor %}
+
+                {% for error in form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endfor %}
+
+                <button class="btn btn-primary" type="submit">
+                    {{ submit_label|default:"保存" }}
+                </button>
+
+                {% if cancel_url %}
+                    <a class="btn btn-secondary" href="{{ cancel_url }}">
+                        {{ cancel_label|default:"返回" }}
+                    </a>
+                {% endif %}
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block js %}
+    {{ block.super }}
+    {{ form.media.js }}
+{% endblock %}

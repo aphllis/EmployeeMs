@@ -1,19 +1,13 @@
-import json
-
+from django.urls import reverse
 from django.db.models import Q
 from django.db import transaction
-from django.shortcuts import render,get_object_or_404,redirect
-from django.http import JsonResponse
-from django.views.decorators.http import require_POST,require_http_methods,require_GET
-from django.http import HttpResponse, HttpResponseForbidden
+from django.shortcuts import render, get_object_or_404, redirect
+from django.views.decorators.http import require_POST, require_http_methods, require_GET
+from django.http import HttpResponseForbidden
 
 
 from app01 import models
-from app01.utils.form import (
-    TaskAssignmentForm,
-    TaskCancelForm,
-    TaskProgressForm
-)
+from app01.utils.form import TaskAssignmentForm, TaskCancelForm, TaskProgressForm
 from app01.utils.pagination import Pagination
 
 from app01.utils.permission import (
@@ -24,19 +18,20 @@ from app01.utils.permission import (
 
 
 def visible_tasks_for(account):
-    """ 按账号权限返回允许看到的任务范围 """
+    """按账号权限返回允许看到的任务范围"""
     queryset = models.TaskManage.objects.all()
 
     # 返回一个空的 QuerySet，并且不会向数据库发送任何真正的 SQL 查询。
-    if not account:return queryset.none()
+    if not account:
+        return queryset.none()
     # 拥有通用查看权限的项目负责人可以查看全部任务。
     if account.has_perm("app01.view_taskmanage"):
         return queryset
-    
+
     # 普通员工只能查看分配给自己记录的任务。
     if account.has_perm("app01.view_own_taskmanage") and account.employee_id:
         return queryset.filter(executor_id=account.employee_id)
-    
+
     return queryset.none()
 
 
@@ -45,34 +40,40 @@ def visible_tasks_for(account):
     "app01.view_own_taskmanage",
 )
 def task_lst(req):
-    """ 任务列表；数据范围由 visible_tasks_for 统一控制 """
+    """任务列表；数据范围由 visible_tasks_for 统一控制"""
 
     account = get_current_account(req)
-    search_data=req.GET.get("q","").strip()
-    status=req.GET.get("status","").strip()
+    search_data = req.GET.get("q", "").strip()
+    status = req.GET.get("status", "").strip()
 
     # '__' django orm的路径分隔符 可以接上跨表字段或者查询条件。
-    queryset = (visible_tasks_for(account)
-    .select_related("executor","executor__department")
-    .order_by("-created_at","-id")
+    queryset = (
+        visible_tasks_for(account)
+        .select_related(
+            "executor",
+            "executor__department",
+            "project",
+            "source_order",
+        )
+        .order_by("-created_at", "-id")
     )
     # Q条件组合器，可以实现或与非
     if search_data:
-        queryset=queryset.filter(
+        queryset = queryset.filter(
             Q(title__icontains=search_data)
-            |Q(detail__icontains=search_data)
-            |Q(executor__name__icontains=search_data)
-            |Q(executor__employee_no__icontains=search_data)
+            | Q(detail__icontains=search_data)
+            | Q(executor__name__icontains=search_data)
+            | Q(executor__employee_no__icontains=search_data)
+            | Q(project__project_code__icontains=search_data)
+            | Q(project__name__icontains=search_data)
         )
 
-    # 
-    valid_statuses={
-        value for value,label in models.TaskManage.STATUS_CHOICES
-    }
+    #
+    valid_statuses = {value for value, label in models.TaskManage.STATUS_CHOICES}
     if status in valid_statuses:
-        queryset=queryset.filter(status=status)
+        queryset = queryset.filter(status=status)
     else:
-        status=""
+        status = ""
     if queryset.exists():
         page = Pagination(request=req, queryset=queryset, page_size=10)
         page_queryset = page.page_queryset
@@ -97,17 +98,18 @@ def task_lst(req):
         },
     )
 
+
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.add_taskmanage")
 def task_add(req):
-    """ 项目负责人创建任务并分配执行员工 """
+    """项目负责人创建任务并分配执行员工"""
     form = TaskAssignmentForm(data=req.POST or None)
 
-    if req.method=="POST" and form.is_valid():
-        account=get_current_account(req)
+    if req.method == "POST" and form.is_valid():
+        account = get_current_account(req)
         with transaction.atomic():
-            task=form.save(commit=False)
-            task.created_by=account
+            task = form.save(commit=False)
+            task.created_by = account
             # 状态和进度从模型默认值开始：待开始、0%。
             task.save()
 
@@ -119,17 +121,25 @@ def task_add(req):
                 progress=task.progress,
                 note="任务创建并分配",
             )
-        return redirect("task_detail",task_id=task.pk)
+        return redirect("task_detail", task_id=task.pk)
     return render(
         req,
-        "task_form.html",
-        {"form":form,"page_title":"新建任务"}
+        "form.html",
+        {
+            "form": form,
+            "page_title": "新建任务",
+            "submit_label": "创建任务",
+            "cancel_url": reverse("task_lst"),
+            "cancel_label": "返回任务列表",
+            "form_max_width": "65rem",
+        },
     )
+
 
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.change_taskmanage")
 def task_edit(request, task_id):
-    """ 项目负责人修改任务内容或重新分配执行员工 """
+    """项目负责人修改任务内容或重新分配执行员工"""
     task = get_object_or_404(
         models.TaskManage.objects.select_related("executor"),
         pk=task_id,
@@ -153,9 +163,17 @@ def task_edit(request, task_id):
 
     return render(
         request,
-        "task_form.html",
-        {"form": form, "page_title": "编辑任务", "task": task},
+        "form.html",
+        {
+            "form": form,
+            "page_title": "编辑任务",
+            "submit_label": "保存修改",
+            "cancel_url": reverse("task_lst"),
+            "cancel_label": "返回任务列表",
+            "form_max_width": "65rem",
+        },
     )
+
 
 def _task_detail_context(account, task, progress_form=None, cancel_form=None):
     """详情页共用的权限判断和模板数据"""
@@ -164,24 +182,23 @@ def _task_detail_context(account, task, progress_form=None, cancel_form=None):
     can_update_progress = (
         owns_task
         and account.has_perm("app01.update_own_taskmanage")
-        and task.status not in (
+        and task.status
+        not in (
             models.TaskManage.STATUS_COMPLETED,
             models.TaskManage.STATUS_CANCELLED,
         )
     )
-    can_cancel = (
-        account.has_perm("app01.change_taskmanage")
-        and task.status not in (
-            models.TaskManage.STATUS_COMPLETED,
-            models.TaskManage.STATUS_CANCELLED,
-        )
+    can_cancel = account.has_perm("app01.change_taskmanage") and task.status not in (
+        models.TaskManage.STATUS_COMPLETED,
+        models.TaskManage.STATUS_CANCELLED,
     )
 
     return {
         "task": task,
         "logs": task.progress_logs.select_related("account").all(),
         "can_update_progress": can_update_progress,
-        "progress_form": progress_form or (
+        "progress_form": progress_form
+        or (
             TaskProgressForm(
                 initial={
                     "status": (
@@ -197,43 +214,35 @@ def _task_detail_context(account, task, progress_form=None, cancel_form=None):
         ),
         "can_edit_task": account.has_perm("app01.change_taskmanage"),
         "can_cancel_task": can_cancel,
-        "cancel_form": cancel_form or (
-            TaskCancelForm() if can_cancel else None
-        ),
+        "cancel_form": cancel_form or (TaskCancelForm() if can_cancel else None),
     }
+
 
 @require_GET
 @account_permission_any(
     "app01.view_taskmanage",
     "app01.view_own_taskmanage",
 )
-def task_detail(req,task_id):
-    """ 详情查询可见任务范围，其他任务编号无法越权查看 """
-    account=get_current_account(req)
-    task=get_object_or_404(
+def task_detail(req, task_id):
+    """详情查询可见任务范围，其他任务编号无法越权查看"""
+    account = get_current_account(req)
+    task = get_object_or_404(
         visible_tasks_for(account).select_related(
-            "executor",
-            "executor__department",
-            "created_by"
+            "executor", "executor__department", "created_by", "project", "source_order"
         ),
         pk=task_id,
     )
-    return render(
-        req,
-        "task_detail.html",
-        _task_detail_context(account,task)
-    )
+    return render(req, "task_detail.html", _task_detail_context(account, task))
+
 
 @require_POST
 @account_permission("app01.update_own_taskmanage")
 def task_progress(req, task_id):
-    """ 员工只更新自己被分配任务的状态和进度，并新增历史记录 """
+    """员工只更新自己被分配任务的状态和进度，并新增历史记录"""
     account = get_current_account(req)
 
     # 即使账号有自助更新权限，也必须再次确认任务执行人是本人。
-    task_queryset = models.TaskManage.objects.filter(
-        executor_id=account.employee_id
-    )
+    task_queryset = models.TaskManage.objects.filter(executor_id=account.employee_id)
 
     # select_for_update提供排他锁，必须在事务中实现，常解决高并发下的竟态
     with transaction.atomic():
@@ -287,9 +296,9 @@ def task_cancel(request, task_id):
 
     with transaction.atomic():
         task = get_object_or_404(
-        models.TaskManage.objects.select_for_update(),
-        pk=task_id,
-    )
+            models.TaskManage.objects.select_for_update(),
+            pk=task_id,
+        )
         if task.status in (
             models.TaskManage.STATUS_COMPLETED,
             models.TaskManage.STATUS_CANCELLED,

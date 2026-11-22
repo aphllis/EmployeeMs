@@ -51,6 +51,11 @@
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/usr/lst">员工管理</a>
                     </li>
+                    {% if can_view_project_management %}
+                    <li class="nav-item">
+                        <a class="nav-link active" aria-current="page" href="/project/lst">项目管理</a>
+                    </li>
+                    {% endif %}
                     {% if can_view_task_management %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/task/lst">任务管理</a>

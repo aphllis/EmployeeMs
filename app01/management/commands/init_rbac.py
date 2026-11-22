@@ -21,10 +21,16 @@ class Command(BaseCommand):
             ],
             "BusinessAdmin": [
                 (models.Order, ["view", "add", "change"]),
+                (models.Project, ["view", "add", "change"]),
+                (models.ProjectResource, ["view", "add", "change"]),
+                (models.ProjectPayment, ["view", "add", "change"]),
             ],
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
-                (models.Order,["view"]),
+                (models.Order, ["view"]),
+                (models.Project, ["view", "add", "change"]),
+                (models.ProjectResource, ["view", "add", "change"]),
+                (models.ProjectPayment, ["view", "add", "change"]),
             ],
             "RegularEmployee": [
                 (models.Department, ["view"]),
@@ -45,14 +51,16 @@ class Command(BaseCommand):
             ],
             "ProjectManager": [
                 (models.TaskManage, "update_own_taskmanage"),
-                (models.Order,"update_assigned_order"),
+                (models.Order, "update_assigned_order"),
+                (models.Project, "change_project_design"),
             ],
-            "BusinessAdmin":[
-                (models.Order,"update_assigned_order"),
+            "BusinessAdmin": [
+                (models.Order, "update_assigned_order"),
             ],
             "RegularEmployee": [
                 (models.TaskManage, "view_own_taskmanage"),
                 (models.TaskManage, "update_own_taskmanage"),
+                (models.Project, "view_assigned_project"),
             ],
         }
 

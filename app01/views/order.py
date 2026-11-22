@@ -1,8 +1,6 @@
 from uuid import uuid4
 
-from random import randint
-from datetime import date
-
+from django.urls import reverse
 from django.db.models import Q
 from django.db import transaction
 from django.utils import timezone
@@ -66,6 +64,7 @@ def order_lst(req):
     selected_status = req.GET.get("status", "").strip()
 
     queryset = models.Order.objects.select_related(
+        "project",
         "assignee",
         "assignee__employee",
         "created_by",
@@ -75,10 +74,11 @@ def order_lst(req):
         queryset = queryset.filter(
             Q(oid__icontains=search_data)
             | Q(title__icontains=search_data)
-            | Q(project_name__icontains=search_data)
-            | Q(customer_name__icontains=search_data)
             | Q(assignee__username__icontains=search_data)
             | Q(assignee__employee__name__icontains=search_data)
+            | Q(project__project_code__icontains=search_data)
+            | Q(project__name__icontains=search_data)
+            | Q(project__customer_name__icontains=search_data)
         )
 
     valid_types = {str(value) for value, _ in models.Order.TYPE_CHOICES}
@@ -136,98 +136,102 @@ def order_add(req):
             models.OrderProgressLog.objects.create(
                 order=order, account=account, status=order.status, note="创建工单"
             )
-        return redirect("order_detail",order_id=order.pk)
+        return redirect("order_detail", order_id=order.pk)
     return render(
         req,
-        "order_form.html",
-        {"form":form,"page_title":"新建商务工单"}
+        "form.html",
+        {
+            "form": form,
+            "page_title": "新建商务工单",
+            "submit_label": "创建工单",
+            "cancel_url": reverse("order_lst"),
+            "cancel_label": "返回工单列表",
+            "form_max_width": "65rem",
+        },
     )
 
 
-@require_http_methods(["GET","POST"])
+@require_http_methods(["GET", "POST"])
 @account_permission("app01.change_order")
-def order_edit(req,order_id):
+def order_edit(req, order_id):
     # 根据主键获得数据库的数据
-    order=get_object_or_404(models.Order,pk=order_id)
+    order = get_object_or_404(models.Order, pk=order_id)
     # 将数据库旧数据，用户提交数据，表单三者绑定
     # instance=order,告诉modelform为修改操作，而不是新建,所以在form.save()时为update而不是insert
-    form=OrderForm(data=req.POST or None,instance=order)
-    if req.method=="POST" and form.is_valid():
+    form = OrderForm(data=req.POST or None, instance=order)
+    if req.method == "POST" and form.is_valid():
         form.save()
-        return redirect("order_detail",order_id=order.pk)
+        return redirect("order_detail", order_id=order.pk)
     return render(
         req,
-        "order_form.html",
+        "form.html",
         {
-            "form":form,
-            "page_title":"编辑商务工单",
-            "order":order
-        }
+            "form": form,
+            "page_title": "编辑商务工单",
+            "submit_label": "保存修改",
+            "cancel_url": reverse("order_lst"),
+            "cancel_label": "返回工单列表",
+            "form_max_width": "65rem",
+        },
     )
+
 
 @require_GET
 @account_permission("app01.view_order")
-def order_detail(req,order_id):
-    account=get_current_account(req)
-    order=get_object_or_404(
+def order_detail(req, order_id):
+    account = get_current_account(req)
+    order = get_object_or_404(
         models.Order.objects.select_related(
-            "assignee",
-            "assignee__employee",
-            "created_by"
+            "assignee", "assignee__employee", "created_by"
         ),
-        pk=order_id
+        pk=order_id,
     )
-    return render(
-        req,
-        "order_detail.html",
-        _order_detail_context(account,order)
-    )
+    return render(req, "order_detail.html", _order_detail_context(account, order))
+
 
 @require_POST
 @account_permission("app01.update_assigned_order")
-def order_status(req,order_id):
+def order_status(req, order_id):
     """只允许被指派的负责人更新状态；每次更新都写入日志"""
-    account=get_current_account(req)
-    form=OrderProgressForm(data=req.POST)
+    account = get_current_account(req)
+    form = OrderProgressForm(data=req.POST)
     with transaction.atomic():
-        order=get_object_or_404(
+        order = get_object_or_404(
             # 排它锁
             models.Order.objects.select_for_update(),
-            pk=order_id
+            pk=order_id,
         )
         # 拥有模型级权限不代表可以修改任意工单
-        if order.assignee_id !=account.pk:
+        if order.assignee_id != account.pk:
             return HttpResponseForbidden("非工单负责人")
 
         if order.status in (
             models.Order.STATUS_CANCELLED,
             models.Order.STATUS_COMPLETED,
-            models.Order.STATUS_REJECTED
+            models.Order.STATUS_REJECTED,
         ):
             return HttpResponseForbidden("已结束工单不能继续处理")
         if form.is_valid():
-            log=form.save(commit=False)
-            log.order=order
-            log.account=account
+            log = form.save(commit=False)
+            log.order = order
+            log.account = account
 
-            order.status=log.status
-            order.save(update_fields=["status","updated_at"])
+            order.status = log.status
+            order.save(update_fields=["status", "updated_at"])
             log.save()
 
-            return redirect("order_detail",order_id=order.pk)
+            return redirect("order_detail", order_id=order.pk)
 
     # 表单无效时,保留用户输入并显示错误
-    order=get_object_or_404(
+    order = get_object_or_404(
         models.Order.objects.select_related(
-            "assignee",
-            "assignee__employee",
-            "created_by"
+            "assignee", "assignee__employee", "created_by"
         ),
         pk=order_id,
     )
     return render(
         req,
         "order_detail.html",
-        _order_detail_context(account,order,progress_form=form),
-        status=400
+        _order_detail_context(account, order, progress_form=form),
+        status=400,
     )

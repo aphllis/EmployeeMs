@@ -1,9 +1,11 @@
-# from tkinter.constants import CASCADE
+from pathlib import PureWindowsPath
 
 from django.db import models
 from decimal import Decimal
+from django.conf import settings
+from django.core.exceptions import ValidationError
+from django.core.validators import MinValueValidator
 
-# from django.db.models import SET_NULL
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_backends
 
@@ -149,6 +151,203 @@ class Employee(models.Model):
     # django的约束
 
 
+class Project(models.Model):
+    """项目台账，保存项目相关信息、阶段和设计要求"""
+    TPYE_CHOICES = (
+        ("architecture", "建筑设计"),
+        ("interior", "室内设计"),
+        ("landscape", "景观设计"),
+        ("planning", "规划设计"),
+        ("oter", "其他"),
+    )
+    # 阶段 描述项目工作处于哪个设计环节
+    STAGE_CHOICES = (
+        ("opportunity", "项目跟进"),
+        ("concept", "方案设计"),
+        ("schematic", "初步设计"),
+        ("construction", "施工图设计"),
+        ("site_service", "施工配合"),
+        ("closeout", "竣工归档"),
+    )
+    # 状态 描述项目是否仍在进行
+    STATUS_CHOICES = (
+        ("active", "进行中"),
+        ("paused", "暂停"),
+        ("completed", "已完成"),
+        ("terminated", "已终止"),
+    )
+    project_code = models.CharField(verbose_name="项目编号", max_length=32, unique=True)
+    name = models.CharField(verbose_name="项目名称", max_length=128)
+    customer_name = models.CharField(verbose_name="客户名称", max_length=128)
+    project_type = models.CharField(
+        verbose_name="项目类型",
+        max_length=32,
+        choices=TPYE_CHOICES,
+    )
+    stage = models.CharField(
+        verbose_name="项目阶段",
+        max_length=32,
+        choices=STAGE_CHOICES,
+        default="opportunity",
+    )
+    status = models.CharField(
+        verbose_name="项目状态",
+        max_length=16,
+        choices=STATUS_CHOICES,
+        default="active",
+    )
+    # 保存当前版本的设计要求
+    design_requirements = models.TextField(verbose_name="设计要求", blank=True)
+    contract_amount = models.DecimalField(
+        verbose_name="合同金额",
+        max_digits=14,
+        decimal_places=2,
+        default=Decimal("0"),
+        # 如果字段值为负数会触发validationError
+        # 该校验是表单层面验证，而save()或obj.create()不会自动执行
+        validators=[MinValueValidator(Decimal("0"))],
+    )
+    # Account 账号中包含了角色权限，项目负责人使用账号外键
+    # 项目初期跟进阶段，负责人允许为空
+    manager = models.ForeignKey(
+        "Account",
+        verbose_name="项目负责人",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="managed_projects",
+    )
+    planned_start = models.DateField(verbose_name="计划开始时间", null=True, blank=True)
+    planned_end = models.DateField(verbose_name="计划结束时间", null=True, blank=True)
+    created_by = models.ForeignKey(
+        "Account",
+        verbose_name="创建账号",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="created_projects",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    class Meta:
+        ordering = ["-created_at", "-id"]
+        # 本质权限的申明，在执行数据库迁移后才会将权限创建写入权限库
+        permissions = [
+            (
+                "view_assigned_project",
+                "Can view projects with tasks assigned to the current employee",
+            ),
+            (
+                "change_project_design",
+                "Can change design stage and requirements of projects",
+            ),
+        ]
+        # 添加数据库层面和合同金额非负校验
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(contract_amount__gte=Decimal("0")),
+                name="project_contract_amount_nonnegative",
+            ),
+        ]
+    def clean(self):
+        # 无论从表单还是绕过表单都要判断计划日期
+        # form中的clean主要用于处理与表单提交时相关的逻辑校验
+        # model中的clean主要用与数据硬性校验规则
+        if (
+            self.planned_start
+            and self.planned_end
+            and self.planned_end < self.planned_start
+        ):
+            raise ValidationError({"planned_end": "计划结束日期不能早于计划开始日期"})
+    def __str__(self):
+        return f"{self.project_code} - {self.name}"
+
+class ProjectResource(models.Model):
+    """共享盘资料索引；只保存位置和说明，不上传任何文件"""
+
+    CATEGORY_CHOICES = (
+        ("brief", "项目输入"),
+        ("contract", "合同资料"),
+        ("reference", "参考资料"),
+        ("drawing", "图纸目录"),
+        ("model", "模型目录"),
+        ("text", "文本目录"),
+        ("issued", "正式交付"),
+        ("other", "其他"),
+    )
+
+    RESOURCE_TYPE_CHOICES = (("folder", "文件夹"), ("file", "文件"))
+
+    SHARE_ROOT_CHOICES = (
+        ("design", "设计共享盘"),
+        ("business", "商务共享盘"),
+        ("archive", "归档共享盘"),
+    )
+
+    project = models.ForeignKey(
+        Project,
+        verbose_name="所属项目",
+        on_delete=models.PROTECT,
+        related_name="resources",
+    )
+    display_name = models.CharField(verbose_name="资料名称", max_length=128)
+    category = models.CharField(
+        verbose_name="资料类别",
+        max_length=24,
+        choices=CATEGORY_CHOICES,
+        default="other",
+    )
+    resource_type = models.CharField(
+        verbose_name="资源类型",
+        max_length=12,
+        choices=RESOURCE_TYPE_CHOICES,
+        default="folder",
+    )
+
+    share_root = models.CharField(
+        verbose_name="共享盘",
+        max_length=24,
+        choices=SHARE_ROOT_CHOICES,
+    )
+    relative_path = models.CharField(verbose_name="相对路径", max_length=500)
+    note = models.CharField(verbose_name="说明", max_length=255, blank=True)
+    is_active = models.BooleanField(verbose_name="启用", default=True)
+
+    created_by = models.ForeignKey(
+        "Account",
+        verbose_name="登记账号",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="created_project_resources",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["category", "display_name", "id"]
+
+    # 让它可以像属性一样读取，不用加括号：`resource.display_path`，而不是 resource.display_path()
+    @property
+    def display_path(self):
+        """用部署配置把共享盘键和相对路径组合为员工可复制的路径"""
+        root = settings.PROJECT_SHARE_ROOT.get(self.share_root, "")
+        parts = self.relative_path.replace("\\", "/").split("/")
+
+        # 如果配置中找不到root，则生成一个可识别的相对位置返回
+        if not root:
+            return f"{self.share_root}:/{self.relative_path}"
+
+        path = PureWindowsPath(root)
+        for part in parts:
+            if part:
+                path /= part
+        return str(path)
+
+    def __str__(self):
+        return f"{self.project.project_code} - {self.display_name}"
+
+
 class TaskManage(models.Model):
     """任务管理表"""
 
@@ -173,6 +372,26 @@ class TaskManage(models.Model):
     )
     title = models.CharField(verbose_name="任务名", max_length=64)
 
+    # 项目任务属于项目，任务允许没有项目
+    project = models.ForeignKey(
+        Project,
+        verbose_name="所属项目",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="tasks",
+    )
+
+    # 任务可选关联产生它的商务工单
+    source_order = models.ForeignKey(
+        "Order",
+        verbose_name="来源工单",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="spawned_tasks",
+    )
+
     detail = models.TextField(verbose_name="详细信息")
 
     executor = models.ForeignKey(
@@ -196,6 +415,7 @@ class TaskManage(models.Model):
         null=True,
         blank=True,
     )
+
     created_by = models.ForeignKey(
         "Account",
         verbose_name="创建账号",
@@ -207,6 +427,14 @@ class TaskManage(models.Model):
     # auto_now_add 在创建时触发；auto_now在创建或更新时触发
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        if self.source_order_id:
+            order_project_id = self.source_order.project_id
+            if order_project_id != self.project_id:
+                raise ValidationError(
+                    {"source_order": "任务项目必须与来源工单项目一致"}
+                )
 
     class Meta:
         permissions = [
@@ -281,16 +509,6 @@ class Order(models.Model):
     )
     oid = models.CharField(verbose_name="工单号", max_length=64, unique=True)
     title = models.CharField(verbose_name="事项名称", max_length=64)
-
-    # 暂时用文本记录项目和客户，以后建立project,customer模型时迁移为外键
-    project_name = models.CharField(
-        verbose_name="项目名称",
-        max_length=128,
-        blank=True,
-    )
-    customer_name = models.CharField(
-        verbose_name="客户名称", max_length=128, blank=True
-    )
     type = models.SmallIntegerField(
         verbose_name="事项类型",
         choices=TYPE_CHOICES,
@@ -301,23 +519,11 @@ class Order(models.Model):
     )
     # 事项或合同金额；received_amount 是该事项累计已回款金额。
     price = models.DecimalField(
-        verbose_name="金额", 
-        max_digits=12, 
-        decimal_places=2,
-        default=Decimal("0")
+        verbose_name="金额", max_digits=12, decimal_places=2, default=Decimal("0")
     )
-
-    received_amount = models.DecimalField(
-        verbose_name="累计回款", 
-        max_digits=12, 
-        decimal_places=2, 
-        default=Decimal("0")
-    )
-
     expected_payment_date = models.DateField(
         verbose_name="预计回款日期", null=True, blank=True
     )
-
 
     # 工单负责人统一使用 Account
     assignee = models.ForeignKey(
@@ -328,7 +534,7 @@ class Order(models.Model):
         blank=True,
         related_name="assigned_orders",
     )
-    created_by=models.ForeignKey(
+    created_by = models.ForeignKey(
         "Account",
         verbose_name="创建账号",
         on_delete=models.PROTECT,
@@ -336,9 +542,25 @@ class Order(models.Model):
         blank=True,
         related_name="created_orders",
     )
+    project = models.ForeignKey(
+        Project,
+        verbose_name="所属项目",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
+
     detail = models.TextField(verbose_name="详细说明", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        project_required_type = {1, 2, 3, 4}
+        if self.type in project_required_type and not self.project_id:
+            raise ValidationError(
+                {"project": "报价、合同变更、设计变更和收款事项必须关联项目"}
+            )
 
     class Meta:
         ordering = ["-created_at", "-id"]
@@ -381,6 +603,57 @@ class OrderProgressLog(models.Model):
 
     def __str__(self):
         return f"{self.order.oid} - {self.account.username}"
+
+
+class ProjectPayment(models.Model):
+    """实际到账记录；累计回款由这些记录汇总，不从工单金额推算"""
+
+    project = models.ForeignKey(
+        Project,
+        verbose_name="项目",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="payments",
+    )
+    source_order = models.ForeignKey(
+        Order,
+        verbose_name="关联收款/开票工单",
+        on_delete=models.PROTECT,
+        # null=True:表示数据库允许该字段储存sql NULL
+        null=True,
+        # blank=True,表示表单和模型验证允许该字段留空
+        blank=True,
+        related_name="payments",
+    )
+    amount = models.DecimalField(
+        verbose_name="到账金额",
+        max_digits=14,
+        decimal_places=2,
+        validators=[MinValueValidator(Decimal("0.01"))],
+    )
+    received_on = models.DateField(verbose_name="到账日期")
+    note = models.TextField(verbose_name="说明", blank=True)
+    recorded_by = models.ForeignKey(
+        "Account",
+        verbose_name="登记账号",
+        on_delete=models.PROTECT,
+        related_name="recorded_project_payments",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-received_on", "-id"]
+
+    def clean(self):
+        if self.source_order_id:
+            if self.source_order.project_id != self.project_id:
+                raise ValidationError({"source_order": "收款工单必须属于当前项目"})
+            if self.source_order.type != 4:
+                raise ValidationError({"source_order": "只能关联“收款/开票”类型工单"})
+
+    def __str__(self):
+        return f"{self.project.project_code} - {self.amount}"
 
 
 class ProfileInfo(models.Model):

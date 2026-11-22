@@ -1,0 +1,97 @@
+{% extends "layout.html" %}
+{% block content %}
+<div class="container" style="max-width: 80rem;">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        {% if can_add_project %}
+        <a href="{% url 'project_add' %}" class="btn btn-success">
+            <i class="bi bi-plus-circle-fill"></i>
+            新建项目
+        </a>
+        {% endif %}
+        <form method="get" class="d-flex gap-2 ms-auto">
+            <input type="search" class="form-control" name="q" value="{{ search }}" placeholder="搜索项目编号、名称或客户">
+            <button class="btn btn-outline-primary" type="submit"></button>
+            <i class="bi bi-search"></i>搜索
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <i class="bi bi-building"></i>
+            项目列表
+        </div>
+
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center mb-0">
+                <thead>
+                    <tr>
+                        <th>项目编号</th>
+                        <th>项目名称</th>
+                        <th>客户</th>
+                        <th>项目类型</th>
+                        <th>项目阶段</th>
+                        <th>状态</th>
+                        <th>项目负责人</th>
+                        <th>详情</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for project in queryset %}
+                    <tr>
+                        <td>{{ project.project_code }}</td>
+                        <td>{{ project.name }}</td>
+                        <td>{{ project.customer_name }}</td>
+                        <td>{{ project.get_project_type_display }}</td>
+                        <td>{{ project.get_stage_display }}</td>
+                        <td>
+                            {% if project.status == "active" %}
+                            <span class="badge text-bg-success">
+                                {{ project.get_status_display }}
+                            </span>
+                            {% elif project.status == "paused" %}
+                            <span class="badge text-bg-warning">
+                                {{ project.get_status_display}}
+                            </span>
+                            {% else %}
+                            <span class="badge text-bg-secondary">
+                                {{ project.get_stage_display }}
+                            </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ project.manager.username|default:"待指派"}}
+                        </td>
+                        <td>
+                            <a class="btn btn-sm btn-outline-primary" href="{url 'project_detail' project.id}">查看</a>
+                        </td>
+
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="8" class="text-muted">
+                            {% if search %}
+                            没有匹配的项目
+                            {% else %}
+                            暂无项目资料
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+
+        </div>
+    </div>
+    {% if page_str %}
+    <div class="d-flex">
+        <ul class="pagination mt-2 me-auto">
+            {{ page_str }}
+        </ul>
+        <ul class="pagination mt-2">
+            {{ goto_page_str }}
+        </ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

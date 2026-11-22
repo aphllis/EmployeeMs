@@ -1,3 +1,5 @@
+from pathlib import PureWindowsPath, PurePosixPath
+
 from django import forms
 from django.core.exceptions import ValidationError
 
@@ -80,10 +82,9 @@ class UserModelForm(BootstrapModelForm):
             "position",
         ]
         # 插件添加样式的手动写法（不利用源码）
-        # widgets={
-        #     'name':forms.TextInput(attrs={'class':'form-control mb-3'}),
-        #     'password':forms.PasswordInput(attrs={'class':'form-control mb-3'})
-        # }
+        widgets={
+           "entry_date":forms.DateInput(attrs={"type":"date"})
+        }
 
     # 下面的构造方法配置表单字段对象的属性，可以负责什么样的数据可以有效
     def __init__(self, *args, **kwargs):
@@ -246,12 +247,125 @@ class AdminResetModelForm(BootstrapModelForm):
         return obj
 
 
+class ProjectBusinessForm(BootstrapModelForm):
+    """商务人员创建项目并维护客户、合同和负责人信息"""
+
+    class Meta:
+        model = models.Project
+        fields = [
+            "name",
+            "customer_name",
+            "project_type",
+            "contract_amount",
+            "manager",
+            "planned_start",
+            "planned_end",
+        ]
+        widgets = {
+            "planned_start": forms.DateInput(attrs={"type": "date"}),
+            "planned_end": forms.DateInput(attrs={"type": "date"}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["manager"].required = False
+        self.fields["manager"].queryset = (
+            models.Account.objects.filter(
+                is_active=True, employee__isnull=False, groups__name="ProjectManager"
+            )
+            .distinct()
+            .order_by("username")
+        )
+
+
+class ProjectDesignForm(BootstrapModelForm):
+    """项目负责人维护项目阶段和设计要求"""
+
+    class Meta:
+        model = models.Project
+        fields = ["stage", "status", "design_requirements"]
+        widgets = {
+            "design_requirements": forms.Textarea(attrs={"rows": 6}),
+        }
+
+
+class ProjectResourceForm(BootstrapModelForm):
+    """共享盘资料表单。用户只录入共享盘键和相对路径，禁止填写绝对路径"""
+
+    class Meta:
+        model = models.ProjectResource
+        fields = [
+            "display_name",
+            "category",
+            "resource_type",
+            "share_root",
+            "relative_path",
+            "note",
+            "is_active",
+        ]
+        widgets = {
+            "note": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean_relative_path(self):
+        raw_path = self.cleaned_data["relative_path"].strip()
+        normalized = raw_path.replace("\\", "/")
+        # Windows 路径规则解析，能按 Windows 规则识别反斜杠 \、盘符和 UNC 路径
+        windows_path = PureWindowsPath(raw_path)
+        # POSIX（Linux/macOS）路径规则解析
+        posix_path = PurePosixPath(normalized)
+
+        # 仅接收相对于共享盘根目录的路径，拒绝盘符、根路径和目录回退。
+        if (
+            not normalized
+            or windows_path.is_absolute()
+            or windows_path.drive
+            or posix_path.is_absolute()
+            or ".." in posix_path.parts
+            or posix_path == PurePosixPath(".")
+        ):
+            raise ValidationError("请输入安全的共享盘相对路径")
+        return posix_path.as_posix()
+
+
+class ProjectPaymentForm(BootstrapModelForm):
+    amount = forms.DecimalField(
+        label="到账金额", min_value=0.01, max_digits=14, decimal_places=2
+    )
+
+    class Meta:
+        model = models.ProjectPayment
+        fields = ["source_order", "amount", "received_on", "note"]
+        widgets = {
+            "received_on": forms.DateField(attrs={"type": "date"}),
+            "note": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def __init__(self, *args, project, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.project = project
+        self.fields["source_order"].required = False
+        self.fields["source_order"].queryset = models.Order.objects.filter(
+            project=project, type=4
+        ).order_by("-created_at")
+
+    def clean(self):
+        cleaned_data = super().clean()
+        source_order = cleaned_data.get("source_order")
+
+        if source_order and source_order.project_id != self.project.pk:
+            self.add_error("source_order", "请选择当前项目的收款/开票工单")
+        return cleaned_data
+
+
 class TaskAssignmentForm(BootstrapModelForm):
-    """项目负责人使用：维护任务内容和分配对象。"""
+    """项目负责人使用：维护任务内容和分配对象"""
 
     class Meta:
         model = models.TaskManage
         fields = [
+            "project",
+            "source_order",
             "level",
             "title",
             "detail",
@@ -274,12 +388,40 @@ class TaskAssignmentForm(BootstrapModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
+        self.fields["project"].required = False
+        self.fields["project"].queryset = models.Project.objects.exclude(
+            status__in=["completed", "terminated"]
+        ).order_by("project_code")
+
+        self.fields["source_order"].required = False
+        self.fields["source_order"].queryset = models.Order.objects.exclude(
+            status__in=[
+                models.Order.STATUS_COMPLETED,
+                models.Order.STATUS_REJECTED,
+                models.Order.STATUS_CANCELLED,
+            ]
+        ).order_by("-created_at")
+
         # 只允许把任务分配给有启用登录账号的员工。
         self.fields["executor"].queryset = (
             models.Employee.objects.filter(login_account__is_active=True)
             .select_related("department")
             .order_by("name")
         )
+
+    def clean(self):
+        cleaned_data = super().clean()
+        project = cleaned_data.get("project")
+        source_order = cleaned_data.get("source_order")
+
+        if source_order and source_order.project_id != (
+            project.pk if project else None
+        ):
+            self.add_error(
+                "source_order",
+                "任务项目必须和来源工单所属项目一致",
+            )
+        return cleaned_data
 
 
 class TaskProgressForm(BootstrapModelForm):
@@ -296,24 +438,20 @@ class TaskProgressForm(BootstrapModelForm):
         ),
     )
 
-    progress=forms.IntegerField(
-        label="完成进度(%)",
-        min_value=0,
-        max_value=100
-    )
+    progress = forms.IntegerField(label="完成进度(%)", min_value=0, max_value=100)
 
     class Meta:
-        model=models.TaskProgressLog
-        fields=["status","progress","note"]
-        widgets={
-            "note":forms.Textarea(attrs={"rows":4}),
+        model = models.TaskProgressLog
+        fields = ["status", "progress", "note"]
+        widgets = {
+            "note": forms.Textarea(attrs={"rows": 4}),
         }
-        labels={
-            "note":"进度说明",
+        labels = {
+            "note": "进度说明",
         }
 
     def clean(self):
-        cleaned_data=super().clean()
+        cleaned_data = super().clean()
 
         # 标记完成时，进度必须达到 100%。
         if (
@@ -324,73 +462,71 @@ class TaskProgressForm(BootstrapModelForm):
 
         return cleaned_data
 
+
 class TaskCancelForm(BootstrapForm):
-    """项目负责人取消任务时原因说明 """
-    reason=forms.CharField(
+    """项目负责人取消任务时原因说明"""
+
+    reason = forms.CharField(
         label="撤销说明",
-        widget=forms.Textarea(attrs={"rows":3}),
+        widget=forms.Textarea(attrs={"rows": 3}),
     )
 
+
 class OrderForm(BootstrapModelForm):
-    """ 商务人员编辑工单资料和指派对象 """
-    price=forms.DecimalField(
+    """商务人员编辑工单资料和指派对象"""
+
+    price = forms.DecimalField(
         label="事项金额",
         min_value=0,
         max_digits=12,
         decimal_places=2,
     )
 
-    received_amount=forms.DecimalField(
-        label="累计回款",
-        min_value=0,
-        max_digits=12,
-        decimal_places=2
-    )
-
     class Meta:
-        model=models.Order
-        fields=[
+        model = models.Order
+        fields = [
+            "project",
             "title",
-            "project_name",
-            "customer_name",
             "type",
             "price",
-            "received_amount",
             "expected_payment_date",
             "assignee",
             "detail",
         ]
-        widgets={
-            "expected_payment_date":forms.DateInput(
-                attrs={"type":"date"}
-            ),
-            "detail":forms.Textarea(attrs={"rows":4})
+        widgets = {
+            "expected_payment_date": forms.DateInput(attrs={"type": "date"}),
+            "detail": forms.Textarea(attrs={"rows": 4}),
         }
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
         # 负责人必须是启用账号，且关联员工，并属于商务或项目负责人角色。
-        self.fields["assignee"].required=True
-        self.fields["assignee"].queryset=(
-            models.Account.objects
-            .filter(
+        self.fields["assignee"].required = True
+        self.fields["assignee"].queryset = (
+            models.Account.objects.filter(
                 is_active=True,
                 employee__isnull=False,
-                groups__name__in=["BusinessAdmin","ProjectManager"]
+                groups__name__in=["BusinessAdmin", "ProjectManager"],
             )
             .distinct()
             .order_by("username")
         )
+        # 项目如果存在要排除已完成和已终止的状态的
+        self.fields["project"].required = False
+        self.fields["project"].queryset = models.Project.objects.exclude(
+            status__in=["completed", "terminated"]
+        ).order_by("project_code")
 
     def clean(self):
-        cleaned_data=super().clean()
-        price=cleaned_data.get("price")
-        received_amount=cleaned_data.get("received_amount")
+        cleaned_data = super().clean()
+        price = cleaned_data.get("price")
+        received_amount = cleaned_data.get("received_amount")
 
         if (
             price is not None
             and received_amount is not None
-            and received_amount>price
+            and received_amount > price
         ):
             self.add_error(
                 "received_amount",
@@ -398,23 +534,25 @@ class OrderForm(BootstrapModelForm):
             )
         return cleaned_data
 
+
 class OrderProgressForm(BootstrapModelForm):
-     """工单负责人更新处理状态并留下说明"""
-     status=forms.TypedChoiceField(
-         label="处理状态",
-         choices=models.Order.STATUS_CHOICES,
-         coerce=int,
-     )
-     class Meta:
-         model=models.OrderProgressLog
-         fields=["status","note"]
-         # 前端渲染控件
-         widgets={
-             "note":forms.Textarea(attrs={"rows":3}),
-         }
-         labels={
-             "note":"处理说明"
-         }
+    """工单负责人更新处理状态并留下说明"""
+
+    status = forms.TypedChoiceField(
+        label="处理状态",
+        choices=models.Order.STATUS_CHOICES,
+        coerce=int,
+    )
+
+    class Meta:
+        model = models.OrderProgressLog
+        fields = ["status", "note"]
+        # 前端渲染控件
+        widgets = {
+            "note": forms.Textarea(attrs={"rows": 3}),
+        }
+        labels = {"note": "处理说明"}
+
 
 class LoginForm(BootstrapForm):
     username = forms.CharField(

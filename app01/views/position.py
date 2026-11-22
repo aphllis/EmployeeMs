@@ -57,7 +57,7 @@ def position_add(req):
             return redirect("/position/lst/")
     else:
         form=PositionModelForm()
-    return render(req,"change.html",{"form":form,"title":"新建职位"})
+    return render(req,"form.html",{"form":form,"title":"新建职位"})
 
 @account_permission("app01.change_position")
 def position_edit(req,nid):
@@ -70,7 +70,7 @@ def position_edit(req,nid):
             return redirect("/position/lst/")
     else:
         form=PositionModelForm(instance=position)
-    return render(req,"change.html",{"form":form,"title":"编辑职位"})
+    return render(req,"form.html",{"form":form,"title":"编辑职位"})
 
 @require_POST
 @account_permission("app01.change_position")

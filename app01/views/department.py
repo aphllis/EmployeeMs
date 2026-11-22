@@ -50,12 +50,12 @@ def department_add(req):
     """添加部门"""
     if req.method == "GET":
         form = DepartModelForm()
-        return render(req, "change.html", {"form": form, "title": "添加部门"})
+        return render(req, "form.html", {"form": form, "title": "添加部门"})
     form = DepartModelForm(data=req.POST)
     if form.is_valid():
         form.save()
         return redirect("/department/lst/")
-    return render(req, "change.html", {"form": form, "title": "添加部门"})
+    return render(req, "form.html", {"form": form, "title": "添加部门"})
 
 
 @require_POST
@@ -76,9 +76,9 @@ def department_edit(req):
         return redirect("/department/lst/")
     if req.method == "GET":
         form = DepartModelForm(instance=row_obj)
-        return render(req, "change.html", {"form": form, "title": "部门编辑"})
+        return render(req, "form.html", {"form": form, "title": "部门编辑"})
     form = DepartModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
         form.save()
         return redirect("/department/lst/")
-    return render(req, "change.html", {"form": form, "title": "部门编辑"})
+    return render(req, "form.html", {"form": form, "title": "部门编辑"})

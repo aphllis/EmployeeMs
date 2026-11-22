@@ -69,7 +69,7 @@ def usr_modelform_add(req):
     if req.method == "GET":
         form = EmployeeCreateForm()
         return render(
-            req, "change.html", {"form": form, "title": "新建员工并创建登录账号"}
+            req, "form.html", {"form": form, "title": "新建员工并创建登录账号"}
         )
 
     # 用户POST提交数据，数据校验
@@ -92,7 +92,7 @@ def usr_modelform_add(req):
     # 原始保存方式是models.Employee.objects.create(field1=value1,field2=value2,...)
     # 校验失败，在页面上显示错误信息
     # 此时的form实例里面有了用户提交的未通过校验的数据，在前端中展示
-    return render(req, "change.html", {"form": form, "title": "新建员工并创建登录账号"})
+    return render(req, "form.html", {"form": form, "title": "新建员工并创建登录账号"})
 
 
 @account_permission("app01.change_employee")
@@ -104,7 +104,7 @@ def usr_edit(req, nid):
         # 注意，filter()方法返回的永远是queryset集合，本身不触发数据库查询
         # 只有用到first() 或者[0]或者遍历打印时才会触发数据库查询
         form = UserModelForm(instance=row_obj)
-        return render(req, "change.html", {"form": form, "title": "编辑用户"})
+        return render(req, "form.html", {"form": form, "title": "编辑用户"})
     # 与添加用户不同的是需要通过行对象的获取告诉django数据应该在其上更新
     form = UserModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
