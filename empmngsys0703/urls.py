@@ -144,7 +144,7 @@ urlpatterns = [
         name="project_detail",
     ),
     path(
-        "project/<int:project_id>/edit",
+        "project/<int:project_id>/edit/",
         project.project_edit,
         name="project_edit",
     ),

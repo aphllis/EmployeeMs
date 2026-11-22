@@ -9,9 +9,7 @@ https://docs.djangoproject.com/en/6.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/6.0/ref/settings/
 """
-from email.policy import default
 from pathlib import Path
-import os
 from decouple import config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -139,3 +137,9 @@ REST_FRAMEWORK = {
 AUTHENTICATION_BACKENDS = [
     "app01.backends.AdminPermissionBackend",
 ]
+
+PROJECT_SHARE_ROOTS = {
+    "design": config("PROJECT_DESIGN_SHARE_ROOT", default=""),
+    "business": config("PROJECT_BUSINESS_SHARE_ROOT", default=""),
+    "archive": config("PROJECT_ARCHIVE_SHARE_ROOT", default=""),
+}

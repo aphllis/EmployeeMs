@@ -34,9 +34,8 @@ def generate_project_code():
 def visible_projects_for(account):
     """项目负责人、商务人员可完全查看，员工只能看本人任务的项目"""
     queryset = models.Project.objects.all()
-
     if not account:
-        return queryset
+        return queryset.none()
     if account.has_perm("app01.view_project"):
         return queryset
     if account.has_perm("app01.view_assigned_project") and account.employee_id:
@@ -140,7 +139,7 @@ def project_edit(req, project_id):
                 "project_detail",
                 kwargs={"project_id": project.pk},
             ),
-            "cancel_label": "返回项目列表",
+            "cancel_label": "返回项目详情",
             "form_max_width": "65rem",
         },
     )
@@ -156,12 +155,14 @@ def project_detail(req, project_id):
     )
 
     # 普通员工只能看到自己的项目任务。
-    
-    tasks = project.tasks.select_related("executor").all()
-    # 如果没有全局查看任务权限，则只能查看自己的项目任务
-    if not account.has_perm("app01.view_taskmanage"):
-        tasks = tasks.filter(executor_id=account.employee_id)
 
+    tasks = project.tasks.select_related("executor").all()
+    if account.has_perm("app01.view_taskmanage"):
+        pass
+    elif account.employee_id and account.has_perm("app01.view_own_taskmanage"):
+        tasks = tasks.filter(executor_id=account.employee_id)
+    else:
+        tasks = tasks.none()
     # 财务和商务数据只有拥有工单查看权限的账号才会查询和传给模板
     can_view_orders = account.has_perm("app01.view_order")
     orders = (
@@ -240,7 +241,7 @@ def project_resource_add(req, project_id):
 
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.change_projectresource")
-def project_resource_edit(req,  project_id,resource_id):
+def project_resource_edit(req, project_id, resource_id):
     # select_related 会联查所属项目，后面读取 resource.project 不会再单独查询。
     resource = get_object_or_404(
         models.ProjectResource.objects.select_related("project"),

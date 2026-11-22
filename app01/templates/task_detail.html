@@ -12,6 +12,28 @@
     <div class="card mb-3">
         <div class="card-header">任务信息</div>
         <div class="card-body">
+            <p>
+                <strong>所属项目:</strong>
+                {% if task.project %}
+                <a href="{% url 'project_detail' project_id=task.project.pk %}">
+                    {{ task.project.project_code}} - {{ task.project.name }}
+                </a>
+                {% else %}
+                <span class="text-muted">未关联项目</span>
+                {% endif %}
+            </p>
+            {% if can_view_source_order %}
+            <p>
+                <strong>来源工单：</strong>
+                {% if task.source_order %}
+                <a href="{% url 'order_detail' order_id=task.source_order.pk %}">
+                    {{ task.source_order.oid }}
+                </a>
+                {% else %}
+                <span class="text-muted">未关联工单</span>
+                {% endif %}
+            </p>
+            {% endif %}
             <p><strong>优先级：</strong>{{ task.get_level_display }}</p>
             <p><strong>执行员工：</strong>{{ task.executor.name }}</p>
             <p><strong>状态：</strong>{{ task.get_status_display }}</p>

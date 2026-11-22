@@ -95,6 +95,7 @@ def task_lst(req):
             "status_choices": models.TaskManage.STATUS_CHOICES,
             "can_add_task": account.has_perm("app01.add_taskmanage"),
             "can_change_task": account.has_perm("app01.change_taskmanage"),
+            "can_view_source_order":account.has_perm("app01.view_order"),
         },
     )
 
@@ -215,6 +216,7 @@ def _task_detail_context(account, task, progress_form=None, cancel_form=None):
         "can_edit_task": account.has_perm("app01.change_taskmanage"),
         "can_cancel_task": can_cancel,
         "cancel_form": cancel_form or (TaskCancelForm() if can_cancel else None),
+        "can_view_source_order": account.has_perm("app01.view_order"),
     }
 
 

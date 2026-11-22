@@ -82,9 +82,7 @@ class UserModelForm(BootstrapModelForm):
             "position",
         ]
         # 插件添加样式的手动写法（不利用源码）
-        widgets={
-           "entry_date":forms.DateInput(attrs={"type":"date"})
-        }
+        widgets = {"entry_date": forms.DateInput(attrs={"type": "date"})}
 
     # 下面的构造方法配置表单字段对象的属性，可以负责什么样的数据可以有效
     def __init__(self, *args, **kwargs):
@@ -341,9 +339,14 @@ class ProjectPaymentForm(BootstrapModelForm):
             "note": forms.Textarea(attrs={"rows": 3}),
         }
 
-    def __init__(self, *args, project, **kwargs):
+    def __init__(self, *args, project, received_total=Decimal("0.00"), **kwargs):
         super().__init__(*args, **kwargs)
         self.project = project
+        self.received_total = received_total or Decimal("0.00")
+
+        # Project 不在表单字段中，但 ProjectPayment.clean() 需要它。
+        self.instance.project = project
+
         self.fields["source_order"].required = False
         self.fields["source_order"].queryset = models.Order.objects.filter(
             project=project, type=4
@@ -352,9 +355,20 @@ class ProjectPaymentForm(BootstrapModelForm):
     def clean(self):
         cleaned_data = super().clean()
         source_order = cleaned_data.get("source_order")
+        amount = cleaned_data.get("amount")
 
         if source_order and source_order.project_id != self.project.pk:
             self.add_error("source_order", "请选择当前项目的收款/开票工单")
+
+        if (
+            amount is not None
+            and self.received_total + amount > self.project.contract_amount
+        ):
+            self.add_error(
+                "amount",
+                "本次到账会使项目累计回款超过合同金额",
+            )
+
         return cleaned_data
 
 
@@ -498,9 +512,8 @@ class OrderForm(BootstrapModelForm):
             "detail": forms.Textarea(attrs={"rows": 4}),
         }
 
-    def __init__(self, *args, received_total=Decimal("0.00"),**kwargs):
+    def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.received_total = received_total
         # 负责人必须是启用账号，且关联员工，并属于商务或项目负责人角色。
         self.fields["assignee"].required = True
         self.fields["assignee"].queryset = (
@@ -512,25 +525,11 @@ class OrderForm(BootstrapModelForm):
             .distinct()
             .order_by("username")
         )
-        # 项目如果存在要排除已完成和已终止的状态的
+        # 项目如果存在,要排除已完成和已终止的状态的
         self.fields["project"].required = False
         self.fields["project"].queryset = models.Project.objects.exclude(
             status__in=["completed", "terminated"]
         ).order_by("project_code")
-
-    def clean(self):
-        cleaned_data = super().clean()
-        price = cleaned_data.get("price")
-        if (
-            price is not None
-            and self.received_total is not None
-            and self.received_total > price
-        ):
-            self.add_error(
-                "received_total",
-                "累计回款不可超过事项金额",
-            )
-        return cleaned_data
 
 
 class OrderProgressForm(BootstrapModelForm):

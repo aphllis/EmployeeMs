@@ -41,7 +41,6 @@
                         <th>事项</th>
                         <th>类型</th>
                         <th>金额</th>
-                        <th>累计回款</th>
                         <th>负责人</th>
                         <th>状态</th>
                         <th>详情</th>
@@ -61,7 +60,6 @@
                         <td>{{ order.title }}</td>
                         <td>{{ order.get_type_display }}</td>
                         <td>{{ order.price }}</td>
-                        <td>{{ order.received_total|default_if_none:"0"|floatformat:2 }}</td>
                         <td>{{ order.assignee.username|default:"未指派"}}</td>
                         <td>{{ order.get_status_display }}</td>
                         <td>
@@ -75,7 +73,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if can_change_order %}10{% else %}9{% endif %}" class="text-muted">
+                        <td colspan="{% if can_change_order %}9{% else %}8{% endif %}" class="text-muted">
                             暂无工单
                         </td>
                     </tr>

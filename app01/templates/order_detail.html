@@ -16,7 +16,6 @@
             <p><strong>事项类型：</strong>{{ order.get_type_display }}</p>
             <p><strong>状态：</strong>{{ order.get_status_display }}</p>
             <p><strong>事项金额：</strong>{{ order.price }}</p>
-            <p><strong>累计回款：</strong>{{ order.received_total|default_if_none:"0"|floatformat:2 }}</p>
             <p><strong>预计回款日期：</strong>
                 {{ order.expected_payment_date|date:"Y-m-d"|default:"-" }}
             </p>

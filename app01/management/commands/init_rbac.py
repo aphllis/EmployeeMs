@@ -23,7 +23,7 @@ class Command(BaseCommand):
                 (models.Order, ["view", "add", "change"]),
                 (models.Project, ["view", "add", "change"]),
                 (models.ProjectResource, ["view", "add", "change"]),
-                (models.ProjectPayment, ["view", "add", "change"]),
+                (models.ProjectPayment, ["view", "add"]),
             ],
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
