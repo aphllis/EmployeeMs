@@ -277,7 +277,10 @@ def project_payment_add(req, project_id):
         visible_projects_for(get_current_account(req)),
         pk=project_id,
     )
-    form = ProjectPaymentForm(data=req.POST or None, project=project)
+    received_total = project.payments.aggregate(total=Sum("amount"))[
+        "total"
+    ] or Decimal("0.00")
+    form = ProjectPaymentForm(data=req.POST or None, project=project,received_total=received_total)
     if req.method == "POST" and form.is_valid():
         payment = form.save(commit=False)
         payment.project = project
