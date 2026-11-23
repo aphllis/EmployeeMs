@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 # from django.core.validators import RegexValidator
-from django.db.models import Q
+from django.db.models import Q,Sum
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 

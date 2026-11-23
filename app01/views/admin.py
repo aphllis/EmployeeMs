@@ -55,7 +55,7 @@ def admin_lst(req):
     )
 
     # 给分页中的每行对象计算权限以控制按钮的状态
-    for obj in query_obj.page_queryset:
+    for obj in page_queryset:
         # 隐式定义了obj对象的属性current_role_ids
         obj.current_role_ids = [group.id for group in obj.groups.all()]
 

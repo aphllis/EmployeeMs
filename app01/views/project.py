@@ -110,7 +110,6 @@ def project_add(req):
 @account_permission_any("app01.change_project", "app01.change_project_design")
 def project_edit(req, project_id):
     account = get_current_account(req)
-    project = get_object_or_404(visible_projects_for(account), pk=project_id)
     # 商务人员改客户、合同等基础资料；项目负责人改阶段和设计要求。
     if account.has_perm("app01.change_project"):
         form_class = ProjectBusinessForm
@@ -120,15 +119,25 @@ def project_edit(req, project_id):
         title = "更新项目设计情况"
     else:
         return HttpResponseForbidden("无项目修改权限")
+    if req.method == "POST" and form_class is ProjectBusinessForm:
+        with transaction.atomic():
+            project = get_object_or_404(
+                visible_projects_for(account).select_for_update(), pk=project_id
+            )
+            form = ProjectBusinessForm(data=req.POST, instance=project)
+            if form.is_valid():
+                form.save()
+                return redirect("project_detail", project_id=project.pk)
+    else:
+        project = get_object_or_404(visible_projects_for(account), pk=project_id)
+        form = form_class(
+            data=req.POST or None,
+            instance=project,
+        )
 
-    form = form_class(
-        data=req.POST or None,
-        instance=project,
-    )
-
-    if req.method == "POST" and form.is_valid():
-        form.save()
-        return redirect("project_detail", project_id=project.pk)
+        if req.method == "POST" and form.is_valid():
+            form.save()
+            return redirect("project_detail", project_id=project.pk)
     return render(
         req,
         "form.html",
@@ -274,27 +283,27 @@ def project_resource_edit(req, project_id, resource_id):
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.add_projectpayment")
 def project_payment_add(req, project_id):
-    account=get_current_account(req)
-    if req.method=="POST":
+    account = get_current_account(req)
+    if req.method == "POST":
         with transaction.atomic():
-            project=get_object_or_404(
+            project = get_object_or_404(
                 visible_projects_for(account).select_for_update(),
                 pk=project_id,
             )
-            received_total=project.payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-            form=ProjectPaymentForm(data=req.POST or None,project=project,received_total=received_total)
+            received_total = project.payments.aggregate(total=Sum("amount"))[
+                "total"
+            ] or Decimal("0.00")
+            form = ProjectPaymentForm(
+                data=req.POST or None, project=project, received_total=received_total
+            )
             if form.is_valid():
-                payment=form.save(commit=False)
-                payment.recorded_by=account
+                payment = form.save(commit=False)
+                payment.recorded_by = account
                 payment.save()
-                return redirect("project_detail",project_id=project.pk)
+                return redirect("project_detail", project_id=project.pk)
     else:
-        project=get_object_or_404(
-            visible_projects_for(account),
-            pk=project_id
-        )
-        received_total=received_total=project.payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
-        form=ProjectPaymentForm(project=project,received_total=received_total)
+        project = get_object_or_404(visible_projects_for(account), pk=project_id)
+        form = ProjectPaymentForm(project=project, received_total=received_total)
     return render(
         req,
         "form.html",
