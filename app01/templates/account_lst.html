@@ -2,14 +2,7 @@
 {% block content %}
 <div class="container" style="width: 80rem">
     <div class="mb-2 d-flex">
-        <div class="me-auto">
-            <!-- {% if can_add_account %} -->
-            <!-- <a class="btn btn-success btn-sm" href="/admin/add/" target="_blank">
-                <i class="bi bi-plus-circle-fill"></i> 新建管理员
-            </a> -->
-            <!-- {% endif %} -->
-        </div>
-
+        <div class="me-auto"></div>
         <!--        搜索区-->
         <form role="search" method="get" class="d-flex align-items-center gap-2 ms-auto flex-nowrap">
             <input type="text" placeholder="搜索" class="form-control " name="q" value="{{search_data}}">
@@ -75,17 +68,6 @@
                         <button type="button" class="btn btn-warning btn-sm reset-password-btn" data-id="{{obj.id}}"
                             data-username="{{obj.username}}">重置</button>
                         {% endif %}
-
-                        <!-- {% if obj.can_delete %}
-                        <form action="/admin/{{obj.id}}/del/" method="post" style="display: inline-block;">
-                            {% csrf_token %}
-                            <button class="btn btn-danger btn-sm">删除</button>
-                        </form>
-                        {% else %}
-                        <span data-bs-toggle="tooltip" title="{{ obj.delete_disabled_reason}}">
-                            <button type="button" class="btn btn-danger btn-sm" disabled>删除</button>
-                        </span>
-                        {% endif %} -->
                     </td>
                 </tr>
                 {% endfor %}
@@ -166,7 +148,7 @@
             const accountId = this.dataset.id;
             const newStatus = this.dataset.status;
 
-            fetch(`/admin/${accountId}/status/`, {
+            fetch(`/account/${accountId}/status/`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/x-www-form-urlencoded",
@@ -216,7 +198,7 @@
         const password = document.getElementById("reset-password").value;
 
         const confirmPassword = document.getElementById("reset-confirm-password").value;
-        fetch(`/admin/${resetAccountId}/reset/`, {
+        fetch(`/account/${resetAccountId}/reset/`, {
             method: "POST",
             headers: {
                 "Content-Type": "application/x-www-form-urlencoded",
@@ -309,7 +291,7 @@
             console.log(key, value);
         }
         // ajax Post
-        fetch(`/admin/${roleAccountId}/role/`, {
+        fetch(`/account/${roleAccountId}/role/`, {
             method: "POST",
             headers: {
                 "X-CSRFToken": getCookie("csrftoken")

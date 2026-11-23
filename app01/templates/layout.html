@@ -32,7 +32,7 @@
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav nav-fill me-auto">
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/admin/lst">账号权限管理</a>
+                        <a class="nav-link active" aria-current="page" href="{% url 'account_lst' %}">账号权限管理</a>
                     </li>
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="organizationDropdown" role="button"
@@ -49,20 +49,20 @@
                         </ul>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/usr/lst">员工管理</a>
+                        <a class="nav-link active" aria-current="page" href="{% url 'employee_lst' %}">员工管理</a>
                     </li>
                     {% if can_view_project_management %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/project/lst">项目管理</a>
+                        <a class="nav-link active" aria-current="page" href="{% url 'project_lst' %}">项目管理</a>
                     </li>
                     {% endif %}
                     {% if can_view_task_management %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/task/lst">任务管理</a>
+                        <a class="nav-link active" aria-current="page" href="{% url 'task_lst' %}">任务管理</a>
                     </li>
                     {% endif %}
                     <li class="nav-item">
-                        <a class="nav-link active" aria-current="page" href="/order/lst">工单管理</a>
+                        <a class="nav-link active" aria-current="page" href="{% url 'order_lst' %}">工单管理</a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/chart/lst">数据统计</a>

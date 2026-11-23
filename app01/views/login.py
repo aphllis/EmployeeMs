@@ -88,7 +88,7 @@ def login_ds(req):
         # 现在设置7天免登录
         req.session.set_expiry(60 * 60 * 24 * 7)
         print("登录 Session:", req.session.get("info"))
-        return redirect("/admin/lst/")
+        return redirect("/account/lst/")
     return render(req, "login.html", {"form": form})
 
 

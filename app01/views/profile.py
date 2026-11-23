@@ -12,7 +12,6 @@ from app01.utils.form import (
     AvatarUploadForm,
 )
 
-
 def profile(req):
     current_account=get_current_account(req)
     if not current_account or not current_account.is_active:
@@ -42,21 +41,6 @@ def profile(req):
         "avatar_form": AvatarUploadForm(),
     }
     return render(req,"profile.html",content)
-
-#网页版
-# def change_password(req):
-#     current_admin=get_current_admin(req)
-#     if req.method=="GET":
-#         form=AdminChangePasswordForm()
-#     else:
-#         form=AdminChangePasswordForm(data=req.POST,current_admin=current_admin)
-#         if form.is_valid():
-#             #此句表示修改python进程中内存中的对象，但是数据库还是旧的，没有更新
-#             current_admin.password=make_password(form.cleaned_data["new_password"])
-#             #此句表示将当前内存中的对象状态保存到数据库
-#             current_admin.save(update_fields=["password"])
-#             return redirect("/profile/")
-#     return render(req,"profile_password.html",{"form":form})
 
 #ajax接口
 @require_POST

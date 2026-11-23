@@ -139,7 +139,7 @@ def test_legacy_md5_password_auto_migrates(monkeypatch):
     )
     # 登录成功应该跳转到后台首页
     assert response.status_code == 302
-    assert response.url == "/admin/lst/"
+    assert response.url == "/account/lst/"
 
     # 重新从数据库读取管理员
     account.refresh_from_db()
@@ -194,7 +194,7 @@ def test_django_hashed_password_login(monkeypatch):
     )
     # 登录成功应该跳转到后台首页
     assert response.status_code == 302
-    assert response.url == "/admin/lst/"
+    assert response.url == "/account/lst/"
 
     # 重新从数据库读取管理员
     account.refresh_from_db()

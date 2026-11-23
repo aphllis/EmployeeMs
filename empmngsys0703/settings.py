@@ -135,7 +135,7 @@ REST_FRAMEWORK = {
 
 
 AUTHENTICATION_BACKENDS = [
-    "app01.backends.AdminPermissionBackend",
+    "app01.backends.AccountPermissionBackend",
 ]
 
 PROJECT_SHARE_ROOTS = {

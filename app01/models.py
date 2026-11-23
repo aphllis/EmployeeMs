@@ -11,36 +11,6 @@ from django.contrib.auth import get_backends
 
 
 # Create your models here.
-class Admin(models.Model):
-    """管理员表"""
-
-    username = models.CharField(verbose_name="用户名", max_length=32, unique=True)
-    # 旧的md5升级到新密码模式，密码最大长度从64升级到128
-    password = models.CharField(verbose_name="密码", max_length=128)
-
-    is_active = models.BooleanField(verbose_name="是否启用", default=True)
-
-    groups = models.ManyToManyField(
-        Group, blank=True, related_name="custom_admins", verbose_name="角色组"
-    )
-
-    class Meta:
-        permissions = [
-            ("manage_admin_roles", "can manage admin roles"),
-            ("reset_admin_password", "can reset admin password"),
-        ]
-
-    def has_perm(self, perm, obj=None):
-        """判断当前管理员是否拥有指定权限"""
-        for backend in get_backends():
-            if backend.has_perm(self, perm, obj):
-                return True
-        return False
-
-    def __str__(self):
-        return self.username
-
-
 class Department(models.Model):
     """部门表"""
 
@@ -655,21 +625,11 @@ class ProjectPayment(models.Model):
 
 
 class ProfileInfo(models.Model):
-    admin = models.OneToOneField(
-        "Admin",
-        on_delete=models.CASCADE,
-        related_name="profile_info",
-        verbose_name="管理员",
-        null=True,
-        blank=True,
-    )
     account = models.OneToOneField(
         "Account",
         on_delete=models.CASCADE,
         related_name="profile_info",
         verbose_name="登录账号",
-        null=True,
-        blank=True,
     )
     nickname = models.CharField(verbose_name="昵称", max_length=32, unique=True)
     signature = models.CharField(verbose_name="个性签名", max_length=128, blank=True)

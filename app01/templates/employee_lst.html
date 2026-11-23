@@ -5,10 +5,10 @@
     <div class="d-flex align-items-center gap-2 mb-2">
         <div class="me-auto">
             {% if can_add %}
-            <a class="btn btn-success btn-sm" href="/usr/modelform/add/">
+            <a class="btn btn-success btn-sm" href="{% url 'employee_add' %}">
                 <i class="bi bi-plus-circle-fill"></i> 新建员工
             </a>
-            <a class="btn btn-success btn-sm" href="/usr/import/">
+            <a class="btn btn-success btn-sm" href="{% url 'employee_import' %}">
                 <i class="bi bi-file-earmark-spreadsheet"></i> Excel 批量导入
             </a>
             {% endif %}
@@ -70,7 +70,7 @@
 
                     {% if can_change %}
                     <td>
-                        <a class="btn btn-primary btn-sm" href="/usr/{{ obj.id }}/edit/">
+                        <a class="btn btn-primary btn-sm" href="{% url 'employee_edit' obj.id %}">
                             编辑
                         </a>
                     </td>

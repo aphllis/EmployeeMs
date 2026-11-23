@@ -7,12 +7,12 @@ from django.db.models import Q
 
 from app01 import models
 from app01.utils.pagination import Pagination
-from app01.utils.form import UserModelForm, EmployeeCreateForm
+from app01.utils.form import EmployeeModelForm, EmployeeCreateForm
 from app01.utils.permission import account_permission, get_current_account
 
 
 @account_permission("app01.view_employee")
-def usr_lst(req):
+def employee_lst(req):
     account = get_current_account(req)
     search_data = req.GET.get("q", "").strip()
 
@@ -59,12 +59,12 @@ def usr_lst(req):
         ),
         "can_change": account.has_perm("app01.change_employee"),
     }
-    return render(req, "usr_lst.html", context)
+    return render(req, "employee_lst.html", context)
 
 
 @account_permission("app01.add_employee")
 @account_permission("app01.add_account")
-def usr_modelform_add(req):
+def employee_add(req):
     """添加用户（modelform版本）"""
     if req.method == "GET":
         form = EmployeeCreateForm()
@@ -86,9 +86,9 @@ def usr_modelform_add(req):
             )
             regular_employee_group = Group.objects.get(name="RegularEmployee")
             account.groups.add(regular_employee_group)
-        return redirect("/usr/lst/")
+        return redirect("/employee/lst/")
 
-    # 如果数据合法，调用form.save()将自动保存数据到数据库表中，哪个表？上面的UserModelForm类中的嵌套类Meta中有model的定义表
+    # 如果数据合法，调用form.save()将自动保存数据到数据库表中，哪个表？上面的employeemodelform类中的嵌套类Meta中有model的定义表
     # 原始保存方式是models.Employee.objects.create(field1=value1,field2=value2,...)
     # 校验失败，在页面上显示错误信息
     # 此时的form实例里面有了用户提交的未通过校验的数据，在前端中展示
@@ -96,27 +96,27 @@ def usr_modelform_add(req):
 
 
 @account_permission("app01.change_employee")
-def usr_edit(req, nid):
+def employee_edit(req, nid):
     row_obj = models.Employee.objects.filter(id=nid).first()
     if not row_obj:
-        return redirect("/usr/lst/")
+        return redirect("/employee/lst/")
     if req.method == "GET":
         # 注意，filter()方法返回的永远是queryset集合，本身不触发数据库查询
         # 只有用到first() 或者[0]或者遍历打印时才会触发数据库查询
-        form = UserModelForm(instance=row_obj)
+        form = EmployeeModelForm(instance=row_obj)
         return render(req, "form.html", {"form": form, "title": "编辑员工"})
     # 与添加用户不同的是需要通过行对象的获取告诉django数据应该在其上更新
-    form = UserModelForm(data=req.POST, instance=row_obj)
+    form = EmployeeModelForm(data=req.POST, instance=row_obj)
     if form.is_valid():
         # 默认保存用户输入的所有数据，如果要将某字段改成其他值可以如下：
         # form.instance.field_name=value
         form.save()
-        return redirect("/usr/lst/")
+        return redirect("/employee/lst/")
     return render(req, "form.html", {"form": form, "title": "编辑员工"})
 
 
 @require_POST
 @account_permission("app01.delete_employee")
-def usr_del(req, nid):
+def employee_delete(req, nid):
     models.Employee.objects.filter(id=nid).delete()
-    return redirect("/usr/lst/")
+    return redirect("/employee/lst/")

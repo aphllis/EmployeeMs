@@ -1,16 +1,16 @@
 {% extends "layout.html" %}
 {% block content %}
 <div class="container" style="max-width: 80rem;">
-    <div class="d-flex align-items-center gap-2 mb-3">
+    <div class="d-flex align-items-center gap-2 mb-2">
         {% if can_add_project %}
-        <a href="{% url 'project_add' %}" class="btn btn-success">
-            <i class="bi bi-plus-circle-fill"></i>
+        <a href="{% url 'project_add' %}" class="btn btn-success btn-sm">
+            <i class="bi bi-plus-circle-fill"></i> 
             新建项目
         </a>
         {% endif %}
         <form method="get" class="d-flex gap-2 ms-auto">
-            <input type="search" class="form-control" name="q" value="{{ search }}" placeholder="搜索项目编号、名称或客户">
-            <button class="btn btn-outline-primary" type="submit">
+            <input type="search" class="form-control" name="q" value="{{ search }}" placeholder="搜索项目或客户">
+            <button class="btn btn-outline-success flex-shrink-0 text-nowrap" type="submit" aria-label="搜索">
                 <i class="bi bi-search"></i>
             </button>
 
@@ -19,7 +19,7 @@
 
     <div class="card">
         <div class="card-header">
-            <i class="bi bi-building"></i>
+            <i class="bi bi-list-ul"></i>
             项目列表
         </div>
 

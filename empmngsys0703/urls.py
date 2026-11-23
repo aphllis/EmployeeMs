@@ -14,8 +14,6 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
-
-from django.contrib import admin
 from django.urls import path, re_path, include
 from django.views.static import serve
 from django.conf import settings
@@ -26,8 +24,6 @@ from app01.views.api_views import EmployeeViewSet, DepartmentViewSet
 from app01.views import (
     department,
     position,
-    usr,
-    admin,
     login,
     task,
     order,
@@ -35,6 +31,8 @@ from app01.views import (
     profile,
     employee_import,
     project,
+    account,
+    employee,
 )
 from app01.api import department_api, employee_api
 
@@ -70,23 +68,22 @@ urlpatterns = [
     path("position/<int:nid>/status/", position.position_status),
 
     # 员工管理
-    path("usr/lst/", usr.usr_lst),
-    path("usr/edit/", usr.usr_edit),
-    path("usr/modelform/add/", usr.usr_modelform_add),
-    path("usr/<int:nid>/edit/", usr.usr_edit),
-    path("usr/<int:nid>/del/", usr.usr_del),
+    path("employee/lst/", employee.employee_lst,name="employee_lst"),
+    path("employee/add/", employee.employee_add,name="employee_add"),
+    path("employee/<int:nid>/edit/", employee.employee_edit,name="employee_edit"),
+    path("employee/<int:nid>/del/", employee.employee_delete,name="employee_delete"),
 
     # 员工批量导入
-    path("usr/import/", employee_import.employee_import_page),
-    path("usr/import/template/", employee_import.employee_import_template),
-    path("usr/import/preview/", employee_import.employee_import_preview),
-    path("usr/import/confirm/", employee_import.employee_import_confirm),
+    path("employee/import/", employee_import.employee_import_page,name="employee_import"),
+    path("employee/import/template/", employee_import.employee_import_template,name="employee_import_template"),
+    path("employee/import/preview/", employee_import.employee_import_preview,name="employee_import_preview"),
+    path("employee/import/confirm/", employee_import.employee_import_confirm,name="employee_import_confirm"),
 
-    # 管理员
-    path("admin/lst/", admin.admin_lst),
-    path("admin/<int:nid>/status/", admin.admin_status),
-    path("admin/<int:nid>/reset/", admin.admin_reset),
-    path("admin/<int:nid>/role/", admin.admin_role),
+    # 账号管理
+    path("account/lst/", account.account_lst,name="account_lst"),
+    path("account/<int:nid>/status/", account.account_status,name="account_status"),
+    path("account/<int:nid>/reset/",account.account_reset_password,name="account_reset_password"),
+    path("account/<int:nid>/role/", account.account_update_roles,name="account_update_roles"),
 
     # 登录
     path("login/", login.login_ds),
@@ -163,18 +160,6 @@ urlpatterns = [
         project.project_payment_add,
         name="project_payment_add",
     ),
-
-
-
-
-
-
-
-
-
-
-
-
     # 数据统计
     path("chart/lst/", chart.chart_lst),
     path("chart/bar/", chart.chart_bar),

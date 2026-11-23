@@ -1,12 +1,12 @@
 from django.contrib.auth.backends import BaseBackend
 
-class AdminPermissionBackend(BaseBackend):
+class AccountPermissionBackend(BaseBackend):
 
     def has_perm(self, user_obj, perm, obj = ...):
         if not user_obj:
             return False
 
-        # 当前Admin所属的所有Group
+        # 当前Account所属的所有Group
         groups = user_obj.groups.all()
 
         # 遍历Group

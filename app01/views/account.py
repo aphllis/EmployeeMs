@@ -18,7 +18,7 @@ from app01.utils.permission import (
 
 
 @account_permission("app01.view_account")
-def admin_lst(req):
+def account_lst(req):
     search_data = req.GET.get("q", "").strip()
     data_dict = {}
     if search_data:
@@ -76,12 +76,12 @@ def admin_lst(req):
             Group.objects.exclude(name="RegularEmployee").values("id", "name")
         ),
     }
-    return render(req, "admin_lst.html", context)
+    return render(req, "account_lst.html", context)
 
 
 @require_POST
 @account_permission("app01.change_account")
-def admin_status(req, nid):
+def account_status(req, nid):
     current_account = get_current_account(req)
 
     target_account = models.Account.objects.filter(id=nid).first()
@@ -109,7 +109,7 @@ def admin_status(req, nid):
 
 @require_POST
 @account_permission("app01.reset_account_password")
-def admin_reset(req, nid):
+def account_reset_password(req, nid):
     """管理员强制重置其他管理员密码"""
     target_account = models.Account.objects.filter(id=nid).first()
 
@@ -140,7 +140,7 @@ def admin_reset(req, nid):
 # 装饰器权限控制
 @require_POST
 @account_permission("app01.manage_account_roles")
-def admin_role(req, nid):
+def account_update_roles(req, nid):
     row_obj = models.Account.objects.filter(id=nid).first()
     if not row_obj:
         return JsonResponse({"success": False, "error": "账号不存在"}, status=404)
