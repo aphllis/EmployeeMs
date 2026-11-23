@@ -93,8 +93,9 @@ def login_ds(req):
 
 
 def logout_ds(req):
-    req.session.clear()
-    return redirect("/logout/")
+    # 清空当前session的数据同时删除后端对应的session记录并重置session key
+    req.session.flush()
+    return redirect("/login/")
 
 
 def img_code(req):

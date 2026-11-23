@@ -303,7 +303,7 @@ def project_payment_add(req, project_id):
                 return redirect("project_detail", project_id=project.pk)
     else:
         project = get_object_or_404(visible_projects_for(account), pk=project_id)
-        form = ProjectPaymentForm(project=project, received_total=received_total)
+        form = ProjectPaymentForm(project=project)
     return render(
         req,
         "form.html",
