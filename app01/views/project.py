@@ -1,6 +1,7 @@
 from decimal import Decimal
 from uuid import uuid4
 
+from django.db import transaction
 from django.urls import reverse
 from django.db.models import Q, Sum
 from django.http import HttpResponseForbidden
@@ -273,21 +274,27 @@ def project_resource_edit(req, project_id, resource_id):
 @require_http_methods(["GET", "POST"])
 @account_permission("app01.add_projectpayment")
 def project_payment_add(req, project_id):
-    project = get_object_or_404(
-        visible_projects_for(get_current_account(req)),
-        pk=project_id,
-    )
-    received_total = project.payments.aggregate(total=Sum("amount"))[
-        "total"
-    ] or Decimal("0.00")
-    form = ProjectPaymentForm(data=req.POST or None, project=project,received_total=received_total)
-    if req.method == "POST" and form.is_valid():
-        payment = form.save(commit=False)
-        payment.project = project
-        payment.recorded_by = get_current_account(req)
-        payment.save()
-        return redirect("project_detail", project_id=project.pk)
-
+    account=get_current_account(req)
+    if req.method=="POST":
+        with transaction.atomic():
+            project=get_object_or_404(
+                visible_projects_for(account).select_for_update(),
+                pk=project_id,
+            )
+            received_total=project.payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+            form=ProjectPaymentForm(data=req.POST or None,project=project,received_total=received_total)
+            if form.is_valid():
+                payment=form.save(commit=False)
+                payment.recorded_by=account
+                payment.save()
+                return redirect("project_detail",project_id=project.pk)
+    else:
+        project=get_object_or_404(
+            visible_projects_for(account),
+            pk=project_id
+        )
+        received_total=received_total=project.payments.aggregate(total=Sum("amount"))["total"] or Decimal("0.00")
+        form=ProjectPaymentForm(project=project,received_total=received_total)
     return render(
         req,
         "form.html",
@@ -297,7 +304,7 @@ def project_payment_add(req, project_id):
             "submit_label": "确认登记",
             "cancel_url": reverse(
                 "project_detail",
-                kwargs={"project_id": project.pk},
+                kwargs={"project_id": project_id},
             ),
             "cancel_label": "返回项目详情",
             "form_max_width": "50rem",

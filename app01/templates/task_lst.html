@@ -17,7 +17,7 @@
             <select class="form-select" name="status">
                 <option value="">全部状态</option>
                 {% for value, label in status_choices %}
-                <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>
+                <option value="{{ value }}" {% if selected_status==value %}selected{% endif %}>
                     {{ label }}
                 </option>
                 {% endfor %}
@@ -65,11 +65,15 @@
                             {% endif %}
                         </td>
                         {% if can_view_source_order %}
+                        <td>
+                            {% if task.source_order %}
                             <a href="{% url 'order_detail' order_id=task.source_order.pk %}">
                                 {{ task.source_order.oid }}
                             </a>
-                        {% else %}
-                        <span class="text-muted">未关联工单</span>
+                            {% else %}
+                            <span class="text-muted">未关联工单</span>
+                            {% endif %}
+                        </td>
                         {% endif %}
                         <td>{{ task.get_level_display }}</td>
                         <td>
@@ -106,7 +110,8 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td colspan="{% if can_change_task and can_view_source_order %}10{% elif can_change_task or can_view_source_order %}9{% else %}8{% endif %}" class="text-muted">
+                        <td colspan="{% if can_change_task and can_view_source_order %}10{% elif can_change_task or can_view_source_order %}9{% else %}8{% endif %}"
+                            class="text-muted">
                             暂无任务
                         </td>
                     </tr>

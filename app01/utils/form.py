@@ -274,7 +274,19 @@ class ProjectBusinessForm(BootstrapModelForm):
             .distinct()
             .order_by("username")
         )
+    
+    def clean_contract_amount(self):
+        contract_amount = self.cleaned_data["contract_amount"]
 
+        if self.instance.pk:
+            received_total = (
+                self.instance.payments.aggregate(total=Sum("amount"))["total"]
+                or Decimal("0.00")
+            )
+            if contract_amount < received_total:
+                raise ValidationError("合同金额不能低于项目累计到账金额")
+
+        return contract_amount
 
 class ProjectDesignForm(BootstrapModelForm):
     """项目负责人维护项目阶段和设计要求"""
@@ -344,7 +356,7 @@ class ProjectPaymentForm(BootstrapModelForm):
         self.project = project
         self.received_total = received_total or Decimal("0.00")
 
-        # Project 不在表单字段中，但 ProjectPayment.clean() 需要它。
+        # Project 不在表单字段中，但 ProjectPayment.clean() (模型对象的clean方法)需要它。
         self.instance.project = project
 
         self.fields["source_order"].required = False
