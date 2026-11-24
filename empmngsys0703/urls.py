@@ -71,7 +71,7 @@ urlpatterns = [
     path("employee/lst/", employee.employee_lst,name="employee_lst"),
     path("employee/add/", employee.employee_add,name="employee_add"),
     path("employee/<int:nid>/edit/", employee.employee_edit,name="employee_edit"),
-    path("employee/<int:nid>/del/", employee.employee_delete,name="employee_delete"),
+    path("employee/<int:nid>/offboard/",employee.employee_offboard,name="employee_offboard"),
 
     # 员工批量导入
     path("employee/import/", employee_import.employee_import_page,name="employee_import"),
@@ -167,7 +167,7 @@ urlpatterns = [
     path("chart/line/", chart.chart_line),
 
     # 个人中心
-    path("profile/", profile.profile),
+    path("profile/", profile.profile,name="profile"),
     path("profile/password/", profile.change_password),
     path("profile/avatar/", profile.change_avatar),
 ]

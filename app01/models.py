@@ -83,6 +83,19 @@ class Position(models.Model):
 class Employee(models.Model):
     """员工表"""
 
+    EMPLOYMENT_ACTIVE = "active"
+    EMPLOYMENT_RESIGNED = "resigned"
+
+    EMPLOYMENT_STATUS_CHOICES = (
+        (EMPLOYMENT_ACTIVE, "在职"),
+        (EMPLOYMENT_RESIGNED, "已离职"),
+    )
+    employment_status = models.CharField(
+        verbose_name="任职状态",
+        max_length=16,
+        choices=EMPLOYMENT_STATUS_CHOICES,
+        default=EMPLOYMENT_ACTIVE,
+    )
     name = models.CharField(verbose_name="姓名", max_length=32)
     employee_no = models.CharField(
         verbose_name="工号", max_length=32, unique=True, null=True, blank=True
@@ -123,6 +136,7 @@ class Employee(models.Model):
 
 class Project(models.Model):
     """项目台账，保存项目相关信息、阶段和设计要求"""
+
     TYPE_CHOICES = (
         ("architecture", "建筑设计"),
         ("interior", "室内设计"),
@@ -199,6 +213,7 @@ class Project(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
     class Meta:
         ordering = ["-created_at", "-id"]
         # 本质权限的申明，在执行数据库迁移后才会将权限创建写入权限库
@@ -219,6 +234,7 @@ class Project(models.Model):
                 name="project_contract_amount_nonnegative",
             ),
         ]
+
     def clean(self):
         # 无论从表单还是绕过表单都要判断计划日期
         # form中的clean主要用于处理与表单提交时相关的逻辑校验
@@ -229,8 +245,10 @@ class Project(models.Model):
             and self.planned_end < self.planned_start
         ):
             raise ValidationError({"planned_end": "计划结束日期不能早于计划开始日期"})
+
     def __str__(self):
         return f"{self.project_code} - {self.name}"
+
 
 class ProjectResource(models.Model):
     """共享盘资料索引；只保存位置和说明，不上传任何文件"""
@@ -701,6 +719,11 @@ class Account(models.Model):
         permissions = [
             ("manage_account_roles", "can manage account roles"),
             ("reset_account_password", "can reset account password"),
+            # 每个角色只获得与职责相符的统计权限。
+            ("view_system_dashboard", "can view system dashboard"),
+            ("view_hr_dashboard", "can view HR dashboard"),
+            ("view_business_dashboard", "can view business dashboard"),
+            ("view_project_dashboard", "can view project dashboard"),
         ]
 
     def has_perm(self, perm, obj=None):

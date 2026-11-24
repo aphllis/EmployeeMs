@@ -1,15 +1,37 @@
 # from urllib import request
-
+from django.urls import reverse
 from django.shortcuts import render, HttpResponse, redirect
-from django.contrib.auth.hashers import check_password,make_password
+from django.contrib.auth.hashers import check_password, make_password
+
 # from django import forms
 from io import BytesIO
 from app01 import models
-# from app01.utils.bootstrap import BootstrapForm
 from app01.utils.form import LoginForm
 from app01.utils.encrypt import md5
 from app01.utils.code import check_code
 from app01.utils.redis_client import client
+
+
+def get_login_destination(account):
+    """根据账号权限选择登录后的首页"""
+    destinations = [
+        # HR进入员工管理，SuperAdmin进入账号管理
+        ("app01.view_employee", "employee_lst"),
+        ("app01.view_account", "account_lst"),
+
+        # 普通员工和项目负责人先进入任务页
+        ("app01.view_own_taskmanage", "task_lst"),
+        ("app01.view_taskmanage", "task_lst"),
+
+        # 商务人员进入工单页
+        ("app01.view_order", "order_lst"),
+    ]
+    for permission_name, url_nam in destinations:
+        if account.has_perm(permission_name):
+            # reverse会根据url名称反向查找返回路径返回字符串
+            return reverse(url_nam)
+    return reverse("profile")
+
 
 def login_ds(req):
     if req.method == "GET":
@@ -18,11 +40,11 @@ def login_ds(req):
     form = LoginForm(data=req.POST)
     if form.is_valid():
         # 获取登录表单数据
-        username=form.cleaned_data['username']
-        raw_password=form.cleaned_data['password']
+        username = form.cleaned_data["username"]
+        raw_password = form.cleaned_data["password"]
 
         # 图片验证码校验
-        user_input_code=form.cleaned_data.pop('code',None)
+        user_input_code = form.cleaned_data.pop("code", None)
 
         redis_key = f"captcha:{req.session.session_key}"
         code = client.get(redis_key)
@@ -33,62 +55,60 @@ def login_ds(req):
         # 图片验证码校验成功后，删除redis里面的验证码
         client.delete(redis_key)
 
-        #先根据用户名查询数据库数据是否存在
+        # 先根据用户名查询数据库数据是否存在
         # admin_obj=models.Admin.objects.filter(username=username).first()
-        account_obj=models.Account.objects.filter(username=username).first()
+        account_obj = models.Account.objects.filter(username=username).first()
         if not account_obj:
             # 主动添加错误信息
             form.add_error("password", "用户名或密码错误")
             return render(req, "login.html", {"form": form})
-        
-        #然后验证登录密码
 
-        stored_password=account_obj.password
-        is_legacy_md5=(
-            len(stored_password)==32 and all(c in "0123456789abcdefABCDEF" for c in stored_password)
+        # 然后验证登录密码
+        stored_password = account_obj.password
+        is_legacy_md5 = len(stored_password) == 32 and all(
+            c in "0123456789abcdefABCDEF" for c in stored_password
         )
 
         if is_legacy_md5:
-            #旧账号：MD5验证
-            password_valid=(
-                md5(raw_password).lower() == stored_password.lower()
-            )
+            # 旧账号：MD5验证
+            password_valid = md5(raw_password).lower() == stored_password.lower()
             if password_valid:
-                #登录成功，立即升级密码
-                account_obj.password=make_password(raw_password)
+                # 登录成功，立即升级密码
+                account_obj.password = make_password(raw_password)
                 account_obj.save(update_fields=["password"])
 
                 print("账号密码已从 MD5 升级为 Django Password Hash")
         else:
             # 新账号：Django hash认证
-            password_valid=check_password(raw_password,stored_password)
+            password_valid = check_password(raw_password, stored_password)
 
         # 密码校验失败
         if not password_valid:
             # 主动添加错误信息
             form.add_error("password", "用户名或密码错误")
             return render(req, "login.html", {"form": form})
-        
+
         # 账号状态检查
         if not account_obj.is_active:
-            form.add_error("password","该管理员账号已被禁用")     
-            return render(req,"login.html",{"form":form})
+            form.add_error("password", "该管理员账号已被禁用")
+            return render(req, "login.html", {"form": form})
 
-        legacy_admin=models.Account.objects.filter(username=account_obj.username).first()
+        legacy_admin = models.Account.objects.filter(
+            username=account_obj.username
+        ).first()
         # 密码校验成功：
         # 用户名和密码正确
         # 网站服务器生成随机字符串，写入浏览器的cookie中，再写入session中
         # django数据库中有django_session存储session键,django默认储存session信息到数据库中
-        req.session["info"] = {"account_id": account_obj.pk, "username": account_obj.username,"id":legacy_admin.pk if legacy_admin else None}
-        # print(req.session["info"])
-        # print("session_key=",req.session.session_key)
-        # print("session_info=",req.session["info"])
-
+        req.session["info"] = {
+            "account_id": account_obj.pk,
+            "username": account_obj.username,
+        }
         # 重新设置session的到期时间，否则session中的info信息会在60s过期
         # 现在设置7天免登录
         req.session.set_expiry(60 * 60 * 24 * 7)
-        print("登录 Session:", req.session.get("info"))
-        return redirect("/account/lst/")
+        # print("登录 Session:", req.session.get("info"))
+        return redirect(get_login_destination(account_obj))
     return render(req, "login.html", {"form": form})
 
 

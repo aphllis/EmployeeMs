@@ -37,6 +37,7 @@
                     <th>入职时间</th>
                     <th>所属部门</th>
                     <th>职位</th>
+                    <th>任职状态</th>
                     {% if can_view_account %}
                     <th>登录账号</th>
                     <th>账号状态</th>
@@ -57,6 +58,7 @@
                     <td>{{ obj.entry_date|date:"Y-m-d"|default:"—" }}</td>
                     <td>{{ obj.department.title|default:"—" }}</td>
                     <td>{{ obj.position.name|default:"—" }}</td>
+                    <td>{{ obj.get_employment_status_display }}</td>
 
                     {% if can_view_account %}
                     {% if obj.login_account %}
@@ -73,12 +75,18 @@
                         <a class="btn btn-primary btn-sm" href="{% url 'employee_edit' obj.id %}">
                             编辑
                         </a>
+                        {% if can_change and obj.employment_status == "active" %}
+                        <form method="post" action="{% url 'employee_offboard' obj.id %}"
+                            onsubmit="return confirm('办理离职后，该员工账号将被停用。确定继续吗？');">
+                            {% csrf_token %}
+                            <button class="btn btn-danger btn-sm" type="submit">办理离职</button>
+                        {% endif %}
                     </td>
                     {% endif %}
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="{% if can_view_account %}{% if can_change %}10{% else %}9{% endif %}{% else %}{% if can_change %}8{% else %}7{% endif %}{% endif %}"
+                    <td colspan="{% if can_view_account %}{% if can_change %}11{% else %}10{% endif %}{% else %}{% if can_change %}9{% else %}8{% endif %}{% endif %}"
                         class="text-muted">
                         {% if search_data %}
                         没有匹配的员工

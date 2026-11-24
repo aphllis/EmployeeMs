@@ -31,42 +31,58 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNavDropdown">
                 <ul class="navbar-nav nav-fill me-auto">
+                    <!-- {% if can_view_account_management %} -->
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{% url 'account_lst' %}">账号权限管理</a>
                     </li>
+                    <!-- {% endif %} -->
+                    {% if can_view_department_management or can_view_position_management %}
                     <li class="nav-item dropdown">
                         <a class="nav-link dropdown-toggle" href="#" id="organizationDropdown" role="button"
                             data-bs-toggle="dropdown" aria-expanded="false">
                             组织架构
                         </a>
                         <ul class="dropdown-menu" aria-labelledby="organizationDropdown">
+                            {% if can_view_department_management %}
                             <li>
                                 <a class="dropdown-item" href="/department/lst/">部门管理</a>
                             </li>
+                            {% endif %}
+                            {% if can_view_position_management %}
                             <li>
                                 <a class="dropdown-item" href="/position/lst/">职位管理</a>
                             </li>
+                            {% endif %}
                         </ul>
                     </li>
+                    {% endif %}
+                    {% if can_view_employee_management %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{% url 'employee_lst' %}">员工管理</a>
                     </li>
+                    {% endif %}
+
                     {% if can_view_project_management %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{% url 'project_lst' %}">项目管理</a>
                     </li>
                     {% endif %}
+
                     {% if can_view_task_management %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{% url 'task_lst' %}">任务管理</a>
                     </li>
                     {% endif %}
+                    {% if can_view_order_management %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="{% url 'order_lst' %}">工单管理</a>
                     </li>
+                    {% endif %}
+                    {% if can_view_statistics %}
                     <li class="nav-item">
                         <a class="nav-link active" aria-current="page" href="/chart/lst">数据统计</a>
                     </li>
+                    {% endif %}
                 </ul>
                 <ul class="navbar-nav">
                     <li class="nav-item">

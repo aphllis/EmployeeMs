@@ -48,14 +48,20 @@ class Command(BaseCommand):
             "SuperAdmin": [
                 (models.Account, "manage_account_roles"),
                 (models.Account, "reset_account_password"),
+                (models.Account, "view_system_dashboard"),
+            ],
+            "HRAdmin": [
+                (models.Account, "view_hr_dashboard"),
             ],
             "ProjectManager": [
                 (models.TaskManage, "update_own_taskmanage"),
                 (models.Order, "update_assigned_order"),
                 (models.Project, "change_project_design"),
+                (models.Account, "view_project_dashboard"),
             ],
             "BusinessAdmin": [
                 (models.Order, "update_assigned_order"),
+                (models.Account, "view_business_dashboard"),
             ],
             "RegularEmployee": [
                 (models.TaskManage, "view_own_taskmanage"),
