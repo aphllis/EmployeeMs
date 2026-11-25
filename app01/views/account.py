@@ -84,8 +84,9 @@ def account_lst(req):
 def account_status(req, nid):
     current_account = get_current_account(req)
 
-    target_account = models.Account.objects.filter(id=nid).first()
-
+    target_account = (
+        models.Account.objects.select_related("employee").filter(pk=nid).first()
+    )
     if not target_account:
         return JsonResponse({"error": "账号不存在"}, status=404)
     if not can_edit_target_account(current_account, target_account):
@@ -98,6 +99,18 @@ def account_status(req, nid):
     # 不能禁用当前登录管理员
     if target_account.id == current_account.id and not new_status:
         return JsonResponse({"error": "无法自禁用"}, status=400)
+
+    # 已离职员工不能通过普通账号状态按钮重新启用。
+    if (
+        new_status
+        and target_account.employee_id
+        and target_account.employee.employment_status
+        == models.Employee.EMPLOYMENT_RESIGNED
+    ):
+        return JsonResponse(
+            {"error": "该员工已离职，不能直接启用账号"},
+            status=400,
+        )
 
     target_account.is_active = new_status
     target_account.save(update_fields=["is_active"])

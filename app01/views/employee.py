@@ -1,9 +1,10 @@
-from django.shortcuts import render, redirect,get_object_or_404
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.hashers import make_password
 from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.contrib.auth.models import Group
 from django.db.models import Q
+from django.utils import timezone
 
 from app01 import models
 from app01.utils.pagination import Pagination
@@ -16,11 +17,9 @@ def employee_lst(req):
     account = get_current_account(req)
     search_data = req.GET.get("q", "").strip()
 
-    queryset = (
-        models.Employee.objects
-        .select_related("department", "position", "login_account")
-        .order_by("id")
-    )
+    queryset = models.Employee.objects.select_related(
+        "department", "position", "login_account"
+    ).order_by("id")
 
     can_view_account = account.has_perm("app01.view_account")
 
@@ -117,24 +116,26 @@ def employee_edit(req, nid):
 
 @require_POST
 @account_permission("app01.change_employee")
-def employee_offboard(req,nid):
-    """办理离职将保留员工及业务记录，同时停用其登录账号"""
+def employee_offboard(req, nid):
+    """办理离职：保留员工资料，记录日期，并停用登录账号。"""
     with transaction.atomic():
-        # 锁定员工行，避免同时进行离职处理和其他修改
-        employee=get_object_or_404(
+        employee = get_object_or_404(
             models.Employee.objects.select_for_update(),
             pk=nid,
         )
-        employee.employment_status=models.Employee.EMPLOYMENT_RESIGNED
-        employee.save(update_fields=["employment_status"])
 
-        # 账号可能不存在：若存在则在同一事务内停用
-        account=(
-            models.Account.objects.select_for_update()
-            .filter(employee=employee)
-            .first()
+        # 保留首次办理日期，避免重复提交改变离职时间。
+        if employee.employment_status != models.Employee.EMPLOYMENT_RESIGNED:
+            employee.employment_status = models.Employee.EMPLOYMENT_RESIGNED
+            employee.employment_end_date = timezone.localdate()
+            employee.save(update_fields=["employment_status", "employment_end_date"])
+
+        # 离职账号不可继续登录；员工记录和任务历史仍保留。
+        account = (
+            models.Account.objects.select_for_update().filter(employee=employee).first()
         )
         if account and account.is_active:
-            account.is_active=False
-            account.save(update_fields=["is_active","updated_at"])
+            account.is_active = False
+            account.save(update_fields=["is_active", "updated_at"])
+
     return redirect("employee_lst")

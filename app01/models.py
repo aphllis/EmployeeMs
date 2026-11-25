@@ -96,6 +96,11 @@ class Employee(models.Model):
         choices=EMPLOYMENT_STATUS_CHOICES,
         default=EMPLOYMENT_ACTIVE,
     )
+    employment_end_date = models.DateField(
+        verbose_name="离职日期",
+        null=True,
+        blank=True,
+    )
     name = models.CharField(verbose_name="姓名", max_length=32)
     employee_no = models.CharField(
         verbose_name="工号", max_length=32, unique=True, null=True, blank=True
@@ -137,6 +142,26 @@ class Employee(models.Model):
 class Project(models.Model):
     """项目台账，保存项目相关信息、阶段和设计要求"""
 
+    BUSINESS_STAGE_CHOICES = (
+        ("lead", "线索跟进"),
+        ("proposal", "方案/报价"),
+        ("negotiation", "商务谈判"),
+        ("contracted", "已签约"),
+        ("lost", "未签约/丢单"),
+    )
+
+    business_stage = models.CharField(
+        verbose_name="商务阶段",
+        max_length=16,
+        choices=BUSINESS_STAGE_CHOICES,
+        default="lead",
+    )
+
+    contract_signed_at = models.DateField(
+        verbose_name="合同签订日期",
+        null=True,
+        blank=True,
+    )
     TYPE_CHOICES = (
         ("architecture", "建筑设计"),
         ("interior", "室内设计"),
@@ -245,7 +270,11 @@ class Project(models.Model):
             and self.planned_end < self.planned_start
         ):
             raise ValidationError({"planned_end": "计划结束日期不能早于计划开始日期"})
-
+        # 已签约项目必须有实际签约日期，不能用建档日期代替。
+        if self.business_stage == "contracted" and not self.contract_signed_at:
+            raise ValidationError({
+                "contract_signed_at": "已签约项目必须填写合同签订日期"
+            })
     def __str__(self):
         return f"{self.project_code} - {self.name}"
 

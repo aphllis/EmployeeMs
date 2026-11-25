@@ -4,7 +4,7 @@ from django import forms
 from django.core.exceptions import ValidationError
 
 # from django.core.validators import RegexValidator
-from django.db.models import Q,Sum
+from django.db.models import Q, Sum
 from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import Group
 
@@ -115,6 +115,7 @@ class EmployeeModelForm(BootstrapModelForm):
             self.add_error("position", "所选职位不属于所选部门")
         return cleaned_data
 
+
 class ProjectBusinessForm(BootstrapModelForm):
     """商务人员创建项目并维护客户、合同和负责人信息"""
 
@@ -124,14 +125,20 @@ class ProjectBusinessForm(BootstrapModelForm):
             "name",
             "customer_name",
             "project_type",
+            "business_stage",
+            "contract_signed_at",
             "contract_amount",
             "manager",
             "planned_start",
             "planned_end",
         ]
         widgets = {
+            "contract_signed_at": forms.DateInput(attrs={"type": "date"}),
             "planned_start": forms.DateInput(attrs={"type": "date"}),
             "planned_end": forms.DateInput(attrs={"type": "date"}),
+        }
+        labels = {
+            "contract_amount": "合同金额",
         }
 
     def __init__(self, *args, **kwargs):
@@ -144,19 +151,19 @@ class ProjectBusinessForm(BootstrapModelForm):
             .distinct()
             .order_by("username")
         )
-    
+
     def clean_contract_amount(self):
         contract_amount = self.cleaned_data["contract_amount"]
 
         if self.instance.pk:
-            received_total = (
-                self.instance.payments.aggregate(total=Sum("amount"))["total"]
-                or Decimal("0.00")
-            )
+            received_total = self.instance.payments.aggregate(total=Sum("amount"))[
+                "total"
+            ] or Decimal("0.00")
             if contract_amount < received_total:
                 raise ValidationError("合同金额不能低于项目累计到账金额")
 
         return contract_amount
+
 
 class ProjectDesignForm(BootstrapModelForm):
     """项目负责人维护项目阶段和设计要求"""
