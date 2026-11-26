@@ -14,6 +14,7 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+
 from django.urls import path, re_path, include
 from django.views.static import serve
 from django.conf import settings
@@ -54,42 +55,61 @@ urlpatterns = [
     ),
     # RESTFUL API DRF实现
     path("api/v2/", include(router.urls)),
-
     # 部门管理
     path("department/lst/", department.department_lst),
     path("department/add/", department.department_add),
     path("department/<int:nid>/status/", department.department_status),
     path("department/edit/", department.department_edit),
-
     # 职位管理
     path("position/lst/", position.position_lst),
     path("position/add/", position.position_add),
     path("position/<int:nid>/edit/", position.position_edit),
     path("position/<int:nid>/status/", position.position_status),
-
     # 员工管理
-    path("employee/lst/", employee.employee_lst,name="employee_lst"),
-    path("employee/add/", employee.employee_add,name="employee_add"),
-    path("employee/<int:nid>/edit/", employee.employee_edit,name="employee_edit"),
-    path("employee/<int:nid>/offboard/",employee.employee_offboard,name="employee_offboard"),
-
+    path("employee/lst/", employee.employee_lst, name="employee_lst"),
+    path("employee/add/", employee.employee_add, name="employee_add"),
+    path("employee/<int:nid>/edit/", employee.employee_edit, name="employee_edit"),
+    path(
+        "employee/<int:nid>/offboard/",
+        employee.employee_offboard,
+        name="employee_offboard",
+    ),
     # 员工批量导入
-    path("employee/import/", employee_import.employee_import_page,name="employee_import"),
-    path("employee/import/template/", employee_import.employee_import_template,name="employee_import_template"),
-    path("employee/import/preview/", employee_import.employee_import_preview,name="employee_import_preview"),
-    path("employee/import/confirm/", employee_import.employee_import_confirm,name="employee_import_confirm"),
-
+    path(
+        "employee/import/", employee_import.employee_import_page, name="employee_import"
+    ),
+    path(
+        "employee/import/template/",
+        employee_import.employee_import_template,
+        name="employee_import_template",
+    ),
+    path(
+        "employee/import/preview/",
+        employee_import.employee_import_preview,
+        name="employee_import_preview",
+    ),
+    path(
+        "employee/import/confirm/",
+        employee_import.employee_import_confirm,
+        name="employee_import_confirm",
+    ),
     # 账号管理
-    path("account/lst/", account.account_lst,name="account_lst"),
-    path("account/<int:nid>/status/", account.account_status,name="account_status"),
-    path("account/<int:nid>/reset/",account.account_reset_password,name="account_reset_password"),
-    path("account/<int:nid>/role/", account.account_update_roles,name="account_update_roles"),
-
+    path("account/lst/", account.account_lst, name="account_lst"),
+    path("account/<int:nid>/status/", account.account_status, name="account_status"),
+    path(
+        "account/<int:nid>/reset/",
+        account.account_reset_password,
+        name="account_reset_password",
+    ),
+    path(
+        "account/<int:nid>/role/",
+        account.account_update_roles,
+        name="account_update_roles",
+    ),
     # 登录
     path("login/", login.login_ds),
     path("logout/", login.logout_ds),
     path("img/code/", login.img_code),
-
     # 任务管理
     path("task/lst/", task.task_lst, name="task_lst"),
     path("task/add/", task.task_add, name="task_add"),
@@ -113,7 +133,6 @@ urlpatterns = [
         task.task_cancel,
         name="task_cancel",
     ),
-
     # 商务工单
     path("order/lst/", order.order_lst, name="order_lst"),
     path("order/add/", order.order_add, name="order_add"),
@@ -133,8 +152,8 @@ urlpatterns = [
         name="order_status",
     ),
     # 项目管理
-    path("project/lst/",project.project_lst,name="project_lst"),
-    path("project/add/",project.project_add,name="project_add"),
+    path("project/lst/", project.project_lst, name="project_lst"),
+    path("project/add/", project.project_add, name="project_add"),
     path(
         "project/<int:project_id>/",
         project.project_detail,
@@ -146,9 +165,9 @@ urlpatterns = [
         name="project_edit",
     ),
     path(
-      "project/<int:project_id>/resources/add/",
-      project.project_resource_add,
-      name="project_resource_add",  
+        "project/<int:project_id>/resources/add/",
+        project.project_resource_add,
+        name="project_resource_add",
     ),
     path(
         "project/<int:project_id>/resources/<int:resource_id>/edit/",
@@ -161,13 +180,10 @@ urlpatterns = [
         name="project_payment_add",
     ),
     # 数据统计
-    path("chart/lst/", chart.chart_lst),
-    path("chart/bar/", chart.chart_bar),
-    path("chart/pie/", chart.chart_pie),
-    path("chart/line/", chart.chart_line),
-
+    path("chart/lst/", chart.chart_lst, name="chart_lst"),
+    path("chart/data/", chart.chart_data, name="chart_data"),
     # 个人中心
-    path("profile/", profile.profile,name="profile"),
+    path("profile/", profile.profile, name="profile"),
     path("profile/password/", profile.change_password),
     path("profile/avatar/", profile.change_avatar),
 ]

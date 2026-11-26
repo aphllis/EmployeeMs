@@ -1,187 +1,205 @@
 {% extends 'layout.html' %}
 {% load static %}
-{% block content %}
-<div class="container" style="height: 80rem">
-    <div class="card mb-2">
-        <div class="card-header">
-            折线图
-        </div>
-        <div class="card-body">
-            <div id='m1' style="width:100%;height:300px;" class="m-auto"></div>
 
+{% block content %}
+<div class="container">
+    <div class="d-flex align-items-end gap-2 mb-2">
+        <div>
+            <label for="dashboard-select" class="form-label">统计视图</label>
+            <select id="dashboard-select" class="form-select">
+                {% for item in dashboard_options %}
+                <option value="{{ item.key }}" {% if item.key==selected_dashboard %}selected{% endif %}>
+                    {{ item.title }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div>
+            <label for="year-select" class="form-label">统计年份</label>
+            <select id="year-select" class="form-select">
+                {% for year in years %}
+                <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
+                    {{ year }}年
+                </option>
+                {% endfor %}
+            </select>
         </div>
     </div>
-    <div class="row gx-2">
-        <div class="col col-xl-8">
-            <div class="card">
-                <div class="card-header">
-                    柱状图
-                </div>
-                <div class="card-body">
-                    <div id='m2' style="width:800px;height:400px;" class="m-auto"></div>
-                </div>
-            </div>
-        </div>
-        <div class="col col-xl-4">
-            <div class="card">
-                <div class="card-header">
-                    饼状图
-                </div>
-                <div class="card-body">
-                    <div id='m3' style="width:100%;height:400px;" class="m-auto"></div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <div id="dashboard-error" class="alert alert-danger d-none" role="alert"></div>
+    <div id="dashboard-cards" class="row g-3 mb-3"></div>
+    <div id="dashboard-charts" class="row g-3"></div>
 </div>
 {% endblock %}
 {% block js %}
-<script src="{%static 'js/echarts.js' %}"></script>
-<!--<script src="https://cdn.jsdelivr.net/npm/echarts@6.1.0/dist/echarts.min.js"></script>-->
+<script src="{% static 'js/echarts.js' %}"></script>
 <script>
-    $(function () {
-        initline();
-        initbar();
-        initpie();
-    })
+    const dataUrl = "{% url 'chart_data' %}";
+    const dashboardSelect = document.getElementById("dashboard-select");
+    const yearSelect = document.getElementById("year-select");
+    const cardsElement = document.getElementById("dashboard-cards");
+    const chartsElement = document.getElementById("dashboard-charts");
+    const errorElement = document.getElementById("dashboard-error");
+    let chartInstances = [];
 
-    function initline() {
+    // 每次切换视图或年份时，先销毁旧图表，避免重复初始化占用资源。
+    let clearCharts = () => {
+        chartInstances.forEach(chart => chart.dispose());
+        chartInstances = [];
+        chartsElment.replaceChildren();
+    }
+    // 使用 textContent 显示接口文字，避免把数据库内容当作 HTML 插入页面。创建统计数字卡片
+    function renderCards(cards) {
+        cardsElement.replaceChildren();
+        cards.forEach(item => {
+            const column = document.createElement("div")
+            column.className = "col-12 col-md-4";
 
-        var chartDom = document.getElementById('m1');
-        var myChart = echarts.init(chartDom);
-        var option;
+            const card = document.createElement("div")
+            card.className = "card h-100";
 
-        option = {
-            title: {
-                text: '分公司业绩图'
-            },
-            tooltip: {
-                trigger: 'axis'
-            },
-            legend: {
-                data: ['分公司1', '分公司2']
-            },
-            // grid: {
-            //     left: '3%',
-            //     right: '4%',
-            //     bottom: '3%',
-            //     containLabel: true
-            // },
-            toolbox: {
-                feature: {
-                    saveAsImage: {}
-                }
-            },
+            const body = document.createElement("div");
+            body.className = "card-body";
+
+            const label = document.createElement("div");
+            label.className = "text-muted";
+            label.textContent = item.label;
+
+            const value = document.createElement("div");
+            value.className = "fs-3 fw-semibold";
+            value.textContent = item.value;
+
+            body.append(label, value);
+            card.append(body);
+            column.append(card);
+            cardsElement.append(column);
+        });
+    }
+
+    // 根据图表类型构造 ECharts 配置
+    function buildChartOption(item) {
+        if (item.type === "pie") {
+            return {
+                tooltip: { trigger: "item" },
+                legend: { bottom: 0 },
+                series: [{
+                    name: item.title,
+                    type: "pie",
+                    radius: "58%",
+                    data: item.data || []
+                }]
+            };
+        };
+        return {
+            tooltip: { trigger: "axis" },
+            legend: { bottom: 0 },
+            grid: { left: 55, right: 25, top30, bottom: 65, containLabel: true },
             xAxis: {
-                type: 'category',
-                boundaryGap: false,
-                data: ['1月', '2月', '3月', '4月', '5月', '6月', '7月']
+                type: "category",
+                data: item / labels || [],
+                axisLabel: {
+                    interval: 0,
+                    rotate: (item.labels || []).length > 6 ? 25 : 0
+                }
             },
             yAxis: {
-                type: 'value'
+                type: "value",
+                axisLabel: item.money ? { formatter: value => "¥" + value } : {}
             },
-            series: []
+            series: (item.series || []).map(series => ({
+                name: series.name,
+                type: item.type,
+                data: series.data
+            }))
         };
-        $.ajax({
-            url: "/chart/line/",
-            type: "get",
-            dataType: "JSON",
-            success: function (res) {
-                if (res.status) {
-                    option.series = res.data;
-                    option && myChart.setOption(option);
-                } else {
-                    alert('数据丢失')
-                }
-            }
-        })
-
     }
 
-    function initbar() {
-        var myChart = echarts.init(document.getElementById('m2'));
-        var option = {
-            title: {
-                text: '员工销量月度汇总表',
-            },
-            tooltip: {},
-            legend: {
-                data: [],
-                bottom: 0
-            },
-            xAxis: {
-                data: []
-            },
-            yAxis: {},
-            series: [],
-        };
-        $.ajax({
-            url: '/chart/bar/',
-            type: 'get',
-            dataType: "JSON",
-            success: function (ref) {
-                if (ref.status) {
-                    console.log(ref.data)
-                    option.legend.data = ref.data.legend;
-                    option.series = ref.data.series;
-                    option.xAxis.data = ref.data.month;
-                    myChart.setOption(option);
-                }
-            }
+    // 创建图表卡片并初始化 ECharts
+    function renderCharts(charts) {
+        clearCharts();
+        charts.forEach(item => {
+            // 建 Bootstrap 网格列和卡片。
+            const column = document.createElement("div");
+            column.className = "col-12 col-xl-6";
+
+            const card = document.createElement("div");
+            card.className = "card h-100";
+
+            // 将图表标题放到卡片头部。
+            const header = document.createElement("div");
+            header.className = "card-header";
+            header.textContent = item.title;
+
+            const body = document.createElement("div");
+            body.className = "card-body";
+
+            // 建一个宽度为 100%、高度为 360px 的 div，作为 ECharts 的绘制区域。
+            const chartElement = document.createElement("div");
+            chartElement.style.width = "100%";
+            chartElement.style.height = "360px";
+
+            body.append(chartElement);
+            card.append(header, body);
+            column.append(card);
+            chartsElement.append(column);
+
+            // 调用 echarts.init(chartElement)，让 ECharts 接管这个区域。
+            const chart = echarts.init(chartElement);
+            // 调用 buildChartOption(item) 取得图表配置，再用 setOption(...) 绘制图表。
+            chart.setOption(buildChartOption(item));
+            // 把图表对象存入 chartInstances，供之后销毁或调整大小使用。
+            chartInstances.push(chart);
         })
-        // 使用刚指定的配置项和数据显示图表。
     }
 
-    function initpie() {
-        var myChart = echarts.init(document.getElementById('m3'));
-        var option = {
-            title: {
-                text: '部门预算占比',
-                subtext: '',
-                left: 'center'
-            },
-            tooltip: {
-                // trigger: 'item'
-            },
-            legend: {
-                // orient: 'vertical',
-                // left: 'left'
-                bottom: 0
-            },
-            series: [
-                {
-                    name: '预算',
-                    type: 'pie',
-                    radius: '50%',
-                    data: [],
-                    emphasis: {
-                        itemStyle: {
-                            shadowBlur: 10,
-                            shadowOffsetX: 0,
-                            shadowColor: 'rgba(0, 0, 0, 0.5)'
-                        }
-                    }
-                }
-            ]
+    // 请求后端数据并更新页面
+    async function loadDashboard() {
+        // 清理旧图表和旧卡片，隐藏之前的错误提示。
+        clearCharts();
+        cardsElement.replaceChildren();
+        errorElement.classList.add("d-none");
+
+        // 用 new URL(...) 创建数据接口地址。
+        const url = new URL(dataUrl, window.location.origin);
+        /*
+        添加两个查询参数：
+        - dashboard：当前所选的统计视图。
+        - year：当前所选年份。
+        最终请求地址会类似于：/chart/data/?dashboard=hr&year=2026
+        */
+        url.searchParams.set("dashboard", dashboardSelect.value);
+        url.searchParams.set("year", yearSelect.value);
+
+        try {
+            // fetch(url, ...) 向 Django 发起请求。这里是读取数据的 GET 请求，不修改数据库，所以不需要 CSRF token。
+            const response = await fetch(url, {
+                headers: { "Accept": "application/json" }
+            });
+            // await 表示等待请求完成；`response.json()` 再把响应正文解析成 JavaScript 对象。
+            const result = await response.json();
+
+            // 如果 HTTP 状态不是成功，或者后端返回 status: false，就抛出错误。
+            if (!response.ok || !result.status) {
+                throw new Error(result.error || "统计数据加载失败");
+            }
+
+            // 请求成功时，分别把卡片数据和图表数据交给 renderCards()、`renderCharts()`。
+            renderCards(result.cards);
+            renderCharts(result.charts);
+        } catch (error) {
+            // 请求失败时，在页面上的 dashboard-error 区域显示错误文本。
+            errorElement.textContent = error.message;
+            errorElement.classList.remove("d-none");
         }
-        $.ajax({
-            url: '/chart/pie/',
-            type: 'get',
-            dataType: 'JSON',
-            success: function (res) {
-                if (res.status) {
-                    console.log(res.data);
-                    //data是在series列表的第一个元素中的对象所以要用索引0获取
-                    option.series[0].data = res.data;
-                    myChart.setOption(option);
-
-                } else {
-                    alert("数据获取失败");
-                }
-            }
-        })
     }
-
-
+    // 统计视图选择框发生变化时，重新调用 loadDashboard()。
+    dashboardSelect.addEventListener("change", loadDashboard);
+    // 年份发生变化时，也重新调用 loadDashboard()。
+    yearSelect.addEventListener("change", loadDashboard);
+    // 浏览器窗口大小变化时，调用每个图表的 resize()，让图表适应容器的新尺寸。
+    window.addEventListener("resize", () => {
+        chartInstances.forEach(chart => chart.resize());
+    });
+    // 最后直接调用一次 loadDashboard()，所以用户首次打开页面时就会自动加载当前选项对应的数据。
+    loadDashboard();
 </script>
 {% endblock %}
