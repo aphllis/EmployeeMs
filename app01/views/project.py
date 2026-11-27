@@ -76,6 +76,9 @@ def project_lst(req):
             "page_str": page_str,
             "goto_page_str": goto_page_str,
             "can_add_project": account.has_perm("app01.add_project"),
+            "can_view_path_templates": account.has_perm(
+                "app01.view_projectpathtemplate"
+            ),
         },
     )
 
@@ -165,7 +168,6 @@ def project_detail(req, project_id):
     )
 
     # 普通员工只能看到自己的项目任务。
-
     tasks = project.tasks.select_related("executor").all()
     if account.has_perm("app01.view_taskmanage"):
         pass
@@ -173,6 +175,7 @@ def project_detail(req, project_id):
         tasks = tasks.filter(executor_id=account.employee_id)
     else:
         tasks = tasks.none()
+
     # 财务和商务数据只有拥有工单查看权限的账号才会查询和传给模板
     can_view_orders = account.has_perm("app01.view_order")
     orders = (
@@ -193,8 +196,18 @@ def project_detail(req, project_id):
         payments = models.ProjectPayment.objects.none()
         received_total = None
 
-    resources = project.resources.filter(is_active=True)
+    # 项目详情查询资源时预加载模板
+    resources = project.resources.filter(is_active=True).select_related("path_template")
 
+    # 项目成果路径列表
+    can_view_task_artifacts = account.has_perm("app01.view_taskartifact")
+    task_artifacts = (
+        models.TaskArtifact.objects.filter(task__project=project)
+        .select_related("task", "task__executor", "submitted_by")
+        .order_by("-created_at")
+        if can_view_task_artifacts
+        else models.TaskArtifact.objects.none()
+    )
     return render(
         req,
         "project_detail.html",
@@ -205,6 +218,7 @@ def project_detail(req, project_id):
             "payments": payments,
             "resources": resources,
             "received_total": received_total,
+            "task_artifacts": task_artifacts,
             "can_view_orders": can_view_orders,
             "can_view_payments": can_view_payments,
             "can_add_resource": account.has_perm("app01.add_projectresource"),
@@ -213,6 +227,7 @@ def project_detail(req, project_id):
                 or account.has_perm("app01.change_project_design")
             ),
             "can_add_payment": account.has_perm("app01.add_projectpayment"),
+            "can_view_task_artifacts": can_view_task_artifacts,
         },
     )
 
@@ -224,7 +239,7 @@ def project_resource_add(req, project_id):
         visible_projects_for(get_current_account(req)),
         pk=project_id,
     )
-    form = ProjectResourceForm(data=req.POST or None)
+    form = ProjectResourceForm(data=req.POST or None, project=project)
 
     if req.method == "POST" and form.is_valid():
         resource = form.save(commit=False)
@@ -259,7 +274,9 @@ def project_resource_edit(req, project_id, resource_id):
         project_id=project_id,
     )
     project = resource.project
-    form = ProjectResourceForm(data=req.POST or None, instance=resource)
+    form = ProjectResourceForm(
+        data=req.POST or None, instance=resource, project=resource.project
+    )
     if req.method == "POST" and form.is_valid():
         form.save()
         return redirect("project_detail", project_id=resource.project_id)

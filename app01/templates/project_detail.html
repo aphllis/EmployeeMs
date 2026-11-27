@@ -10,10 +10,7 @@
 
         <div class="d-flex gap-2">
             {% if can_edit_project %}
-            <a
-                class="btn btn-outline-primary"
-                href="{% url 'project_edit' project.id %}"
-            >
+            <a class="btn btn-outline-primary" href="{% url 'project_edit' project.id %}">
                 编辑项目
             </a>
             {% endif %}
@@ -86,10 +83,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>项目资料位置</span>
             {% if can_add_resource %}
-            <a
-                class="btn btn-sm btn-success"
-                href="{% url 'project_resource_add' project.id %}"
-            >
+            <a class="btn btn-sm btn-success" href="{% url 'project_resource_add' project.id %}">
                 登记资料位置
             </a>
             {% endif %}
@@ -103,6 +97,7 @@
                         <th>类别</th>
                         <th>类型</th>
                         <th>共享盘路径</th>
+                        <th>来源模版</th>
                         <th>说明</th>
                         {% if can_add_resource %}
                         <th>操作</th>
@@ -117,21 +112,17 @@
                         <td>{{ resource.get_resource_type_display }}</td>
                         <td>
                             <code>{{ resource.display_path }}</code>
-                            <button
-                                type="button"
-                                class="btn btn-sm btn-outline-secondary copy-path ms-1"
-                                data-path="{{ resource.display_path }}"
-                            >
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-path ms-1"
+                                data-path="{{ resource.display_path }}">
                                 复制路径
                             </button>
                         </td>
+                        <td>{{ resource.path_template.name|default:"手动登记" }}</td>
                         <td>{{ resource.note|default:"—" }}</td>
                         {% if can_add_resource %}
                         <td>
-                            <a
-                                class="btn btn-sm btn-outline-primary"
-                                href="{% url 'project_resource_edit' project_id=project.pk resource_id=resource.pk %}"
-                            >
+                            <a class="btn btn-sm btn-outline-primary"
+                                href="{% url 'project_resource_edit' project_id=project.pk resource_id=resource.pk %}">
                                 编辑
                             </a>
                         </td>
@@ -139,10 +130,7 @@
                     </tr>
                     {% empty %}
                     <tr>
-                        <td
-                            colspan="{% if can_add_resource %}6{% else %}5{% endif %}"
-                            class="text-center text-muted"
-                        >
+                        <td colspan="{% if can_add_resource %}7{% else %}6{% endif %}" class="text-center text-muted">
                             暂无共享盘资料索引
                         </td>
                     </tr>
@@ -174,11 +162,9 @@
                         <td>{{ task.executor.name }}</td>
                         <td>{{ task.get_status_display }}</td>
                         <td>
-                            <div class="progress" role="progressbar"
-                                 aria-valuenow="{{ task.progress }}"
-                                 aria-valuemin="0" aria-valuemax="100">
-                                <div class="progress-bar"
-                                     style="width: {{ task.progress }}%">
+                            <div class="progress" role="progressbar" aria-valuenow="{{ task.progress }}"
+                                aria-valuemin="0" aria-valuemax="100">
+                                <div class="progress-bar" style="width: {{ task.progress }}%">
                                     {{ task.progress }}%
                                 </div>
                             </div>
@@ -199,6 +185,42 @@
             </table>
         </div>
     </div>
+    
+    {% if can_view_task_artifacts %}
+    <div class="card mb-3">
+        <div class="card-header">任务成果路径</div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th>任务名称</th>
+                        <th>执行员工</th>
+                        <th>成果名称</th>
+                        <th>共享盘路径</th>
+                        <th>登记时间</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for artifact in task_artifacts %}
+                    <tr>
+                        <td>{{ artifact.task.title }}</td>
+                        <td>{{ artifact.task.executor.name }}</td>
+                        <td>{{ artifact.display_name }}</td>
+                        <td><code>{{ artifact.display_path }}</code></td>
+                        <td>{{ artifact.created_at|date:"Y-m-d H:i" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">
+                            暂无任务成果路径
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 
     <!-- 仅商务和项目管理权限用户可见 -->
     {% if can_view_orders %}
@@ -249,10 +271,7 @@
         <div class="card-header d-flex justify-content-between align-items-center">
             <span>项目回款</span>
             {% if can_add_payment %}
-            <a
-                class="btn btn-sm btn-success"
-                href="{% url 'project_payment_add' project.id %}"
-            >
+            <a class="btn btn-sm btn-success" href="{% url 'project_payment_add' project.id %}">
                 登记到账
             </a>
             {% endif %}

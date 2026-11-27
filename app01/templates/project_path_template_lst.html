@@ -1,0 +1,83 @@
+{% extends "layout.html" %}
+
+{% block content %}
+<div class="container" style="max-width: 80rem">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        {% if can_add %}
+        <a class="btn btn-success btn-sm"
+           href="{% url 'project_path_template_add' %}">
+            新建路径模板
+        </a>
+        {% endif %}
+
+        <form method="get" class="d-flex gap-2 ms-auto">
+            <input class="form-control" type="search" name="q"
+                   value="{{ search }}" placeholder="搜索模板名称或路径">
+            <button class="btn btn-outline-success" type="submit">搜索</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">公共项目路径模板</div>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover text-center mb-0">
+                <thead>
+                    <tr>
+                        <th>模板名称</th>
+                        <th>类别</th>
+                        <th>共享盘</th>
+                        <th>项目内相对路径</th>
+                        <th>状态</th>
+                        {% if can_change %}<th>操作</th>{% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in queryset %}
+                    <tr>
+                        <td>{{ item.name }}</td>
+                        <td>{{ item.get_category_display }}</td>
+                        <td>{{ item.get_share_root_display }}</td>
+                        <td><code>{{ item.relative_path }}</code></td>
+                        <td>
+                            {% if item.is_active %}启用{% else %}停用{% endif %}
+                        </td>
+                        {% if can_change %}
+                        <td>
+                            <a class="btn btn-outline-primary btn-sm"
+                               href="{% url 'project_path_template_edit' item.pk %}">
+                                编辑
+                            </a>
+                            <form class="d-inline" method="post"
+                                  action="{% url 'project_path_template_status' item.pk %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="is_active"
+                                       value="{% if item.is_active %}false{% else %}true{% endif %}">
+                                <button class="btn btn-outline-secondary btn-sm"
+                                        type="submit">
+                                    {% if item.is_active %}停用{% else %}启用{% endif %}
+                                </button>
+                            </form>
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="{% if can_change %}6{% else %}5{% endif %}"
+                            class="text-muted">
+                            暂无路径模板
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    {% if page_str %}
+    <div class="d-flex">
+        <ul class="pagination mt-2 me-auto">{{ page_str }}</ul>
+        <ul class="pagination mt-2">{{ goto_page_str }}</ul>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

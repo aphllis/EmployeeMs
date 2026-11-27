@@ -10,6 +10,7 @@ from django.contrib.auth.models import Group
 
 from app01 import models
 from app01.utils.bootstrap import BootstrapModelForm, BootstrapForm
+from app01.utils.shared_paths import normalize_relative_share_path
 
 
 class DepartModelForm(BootstrapModelForm):
@@ -183,6 +184,7 @@ class ProjectResourceForm(BootstrapModelForm):
         model = models.ProjectResource
         fields = [
             "display_name",
+            "path_template",
             "category",
             "resource_type",
             "share_root",
@@ -193,27 +195,83 @@ class ProjectResourceForm(BootstrapModelForm):
         widgets = {
             "note": forms.Textarea(attrs={"rows": 3}),
         }
+    # 此时project是强制关键字参数
+    def __init__(self, *args, project,**kwargs):
+        super().__init__(*args, **kwargs)
+        self.project=project
+
+        # 只允许新路径选择启用模板；编辑时保留原来使用的停用模板选项。
+        template_filter=Q(is_active=True)
+        if self.instance.path_template_id:
+            template_filter|= Q(pk=self.instance.path_template_id)
+        self.fields["path_template"].queryset=(
+            models.ProjectPathTemplate.objects.filter(template_filter)
+            .order_by("sort_order","name")
+        )
+
+        # 留空相对路径时，可由模板生成；类别和共享盘也由模板带入。
+        for field_name in ("relative_path", "category", "resource_type", "share_root"):
+            self.fields[field_name].required = False
+        
+    def clean_relative_path(self):
+        # ProjectResourceForm 允许用户选择模板、暂时不填写实际路径，
+        # 之后在 clean() 中用“项目编号 + 模板路径”生成它。因此要先让空值通过字段清洗
+        raw_path = self.cleaned_data.get("relative_path", "").strip()
+        if not raw_path:
+            return ""
+        # normalize_relative_share_path("") 不会返回空字符串，而是触发 ValidationError：这个函数规定传入路径必须非空。
+        return normalize_relative_share_path(raw_path)
+
+    def clean(self):
+        cleaned_data=super().clean()
+        template=cleaned_data.get("path_template")
+        relative_path=cleaned_data.get("relative_path")
+        if template:
+            # 模板提供类别、资源类型和共享盘默认值。
+            cleaned_data["category"] = template.category
+            cleaned_data["resource_type"] = template.resource_type
+            cleaned_data["share_root"] = template.share_root
+
+            # 相对路径为空时，以项目编号作为项目目录，再接模板路径。
+            if not relative_path:
+                generated_path = (
+                    f"{self.project.project_code}/{template.relative_path}"
+                )
+                try:
+                    cleaned_data["relative_path"] = (
+                        normalize_relative_share_path(generated_path)
+                    )
+                except ValidationError as exc:
+                    self.add_error("relative_path", exc)
+        else:
+            # 不使用模板时，这些值必须由用户手动填写。
+            for field_name, label in (
+                ("category", "资料类别"),
+                ("resource_type", "资源类型"),
+                ("share_root", "共享盘"),
+                ("relative_path", "实际相对路径"),
+            ):
+                if not cleaned_data.get(field_name):
+                    self.add_error(field_name, f"请选择或填写{label}")
+
+        return cleaned_data
+class ProjectPathTemplateForm(BootstrapModelForm):
+    class Meta:
+        model = models.ProjectPathTemplate
+        fields = [
+            "name",
+            "category",
+            "resource_type",
+            "share_root",
+            "relative_path",
+            "note",
+            "sort_order",
+            "is_active",
+        ]
+        widgets = {"note": forms.Textarea(attrs={"rows":3}),}
 
     def clean_relative_path(self):
-        raw_path = self.cleaned_data["relative_path"].strip()
-        normalized = raw_path.replace("\\", "/")
-        # Windows 路径规则解析，能按 Windows 规则识别反斜杠 \、盘符和 UNC 路径
-        windows_path = PureWindowsPath(raw_path)
-        # POSIX（Linux/macOS）路径规则解析
-        posix_path = PurePosixPath(normalized)
-
-        # 仅接收相对于共享盘根目录的路径，拒绝盘符、根路径和目录回退。
-        if (
-            not normalized
-            or windows_path.is_absolute()
-            or windows_path.drive
-            or posix_path.is_absolute()
-            or ".." in posix_path.parts
-            or posix_path == PurePosixPath(".")
-        ):
-            raise ValidationError("请输入安全的共享盘相对路径")
-        return posix_path.as_posix()
-
+        return normalize_relative_share_path(self.cleaned_data["relative_path"])
 
 class ProjectPaymentForm(BootstrapModelForm):
     amount = forms.DecimalField(
@@ -326,6 +384,25 @@ class TaskAssignmentForm(BootstrapModelForm):
             )
         return cleaned_data
 
+class TaskArtifactForm(BootstrapModelForm):
+    """任务成果表单"""
+    class Meta:
+        model = models.TaskArtifact
+        fields = [
+            "display_name",
+            "resource_type",
+            "share_root",
+            "relative_path",
+            "note",
+        ]
+        widgets = {
+            "note": forms.Textarea(attrs={"rows": 3}),
+        }
+
+    def clean_relative_path(self):
+        return normalize_relative_share_path(
+            self.cleaned_data["relative_path"]
+        )
 
 class TaskProgressForm(BootstrapModelForm):
     """员工使用：不能从表单修改任务标题、执行人等字段。"""
@@ -658,3 +735,5 @@ class EmployeeCreateForm(EmployeeModelForm):
         if password and confirm_password and password != confirm_password:
             self.add_error("confirm_password", "两次输入密码不一致")
         return cleaned_data
+
+

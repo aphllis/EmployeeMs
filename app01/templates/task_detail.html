@@ -91,7 +91,55 @@
         </div>
     </div>
     {% endif %}
+    <div class="card mb-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>任务成果路径</span>
+            {% if can_add_artifact %}
+            <a class="btn btn-sm btn-success" href="{% url 'task_artifact_add' task.id %}">
+                登记成果路径
+            </a>
+            {% endif %}
+        </div>
 
+        <div class="table-responsive">
+            <table class="table table-bordered mb-0">
+                <thead>
+                    <tr>
+                        <th>成果名称</th>
+                        <th>类型</th>
+                        <th>共享盘路径</th>
+                        <th>登记人</th>
+                        <th>登记时间</th>
+                        <th>说明</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for artifact in artifacts %}
+                    <tr>
+                        <td>{{ artifact.display_name }}</td>
+                        <td>{{ artifact.get_resource_type_display }}</td>
+                        <td>
+                            <code>{{ artifact.display_path }}</code>
+                            <button type="button" class="btn btn-sm btn-outline-secondary copy-path"
+                                data-path="{{ artifact.display_path }}">
+                                复制路径
+                            </button>
+                        </td>
+                        <td>{{ artifact.submitted_by.username }}</td>
+                        <td>{{ artifact.created_at|date:"Y-m-d H:i" }}</td>
+                        <td>{{ artifact.note|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center text-muted">
+                            暂无成果路径
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
     <div class="card">
         <div class="card-header">进度记录</div>
         <ul class="list-group list-group-flush">

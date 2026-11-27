@@ -34,6 +34,7 @@ from app01.views import (
     project,
     account,
     employee,
+    path_template,
 )
 from app01.api import department_api, employee_api
 
@@ -133,6 +134,12 @@ urlpatterns = [
         task.task_cancel,
         name="task_cancel",
     ),
+    # 任务成果登记
+    path(
+        "task/<int:task_id>/artifacts/add/",
+        task.task_artifact_add,
+        name="task_artifact_add",
+    ),
     # 商务工单
     path("order/lst/", order.order_lst, name="order_lst"),
     path("order/add/", order.order_add, name="order_add"),
@@ -178,6 +185,27 @@ urlpatterns = [
         "project/<int:project_id>/payments/add/",
         project.project_payment_add,
         name="project_payment_add",
+    ),
+    # 项目公共路径模版
+    path(
+        "project/path-templates/",
+        path_template.project_path_template_lst,
+        name="project_path_template_lst",
+    ),
+    path(
+        "project/path-templates/add/",
+        path_template.project_path_template_add,
+        name="project_path_template_add",
+    ),
+    path(
+        "project/path-templates/<int:nid>/edit/",
+        path_template.project_path_template_edit,
+        name="project_path_template_edit",
+    ),
+    path(
+        "project/path-templates/<int:nid>/status/",
+        path_template.project_path_template_status,
+        name="project_path_template_status",
     ),
     # 数据统计
     path("chart/lst/", chart.chart_lst, name="chart_lst"),

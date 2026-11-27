@@ -24,6 +24,7 @@ class Command(BaseCommand):
                 (models.Project, ["view", "add", "change"]),
                 (models.ProjectResource, ["view", "add", "change"]),
                 (models.ProjectPayment, ["view", "add"]),
+                (models.ProjectPathTemplate, ["view", "add", "change"]),
             ],
             "ProjectManager": [
                 (models.TaskManage, ["view", "add", "change"]),
@@ -31,10 +32,14 @@ class Command(BaseCommand):
                 (models.Project, ["view"]),
                 (models.ProjectResource, ["view", "add", "change"]),
                 (models.ProjectPayment, ["view"]),
+                (models.ProjectPathTemplate, ["view", "add", "change"]),
+                (models.TaskArtifact, ["view", "add"]),
             ],
             "RegularEmployee": [
                 (models.Department, ["view"]),
                 (models.Position, ["view"]),
+                (models.ProjectPathTemplate, ["view"]),
+                (models.TaskArtifact, ["view", "add"]),
             ],
             # 暂时保留旧组，清掉它的通用读取权限。
             # 后续应按具体业务范围给只读用户授权。

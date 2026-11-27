@@ -9,6 +9,7 @@ from django.core.validators import MinValueValidator
 from django.contrib.auth.models import Group
 from django.contrib.auth import get_backends
 
+from app01.utils.shared_paths import build_display_share_path
 
 # Create your models here.
 class Department(models.Model):
@@ -307,6 +308,14 @@ class ProjectResource(models.Model):
         on_delete=models.PROTECT,
         related_name="resources",
     )
+    path_template = models.ForeignKey(
+        "ProjectPathTemplate",
+        verbose_name="来源公共模板",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="project_resources",
+    )
     display_name = models.CharField(verbose_name="资料名称", max_length=128)
     category = models.CharField(
         verbose_name="资料类别",
@@ -347,24 +356,68 @@ class ProjectResource(models.Model):
     # 让它可以像属性一样读取，不用加括号：`resource.display_path`，而不是 resource.display_path()
     @property
     def display_path(self):
-        """用部署配置把共享盘键和相对路径组合为员工可复制的路径"""
-        root = settings.PROJECT_SHARE_ROOT.get(self.share_root, "")
-        parts = self.relative_path.replace("\\", "/").split("/")
-
-        # 如果配置中找不到root，则生成一个可识别的相对位置返回
-        if not root:
-            return f"{self.share_root}:/{self.relative_path}"
-
-        path = PureWindowsPath(root)
-        for part in parts:
-            if part:
-                path /= part
-        return str(path)
-
+        """显示共享盘根目录与项目实际相对路径的组合。"""
+        return build_display_share_path(self.share_root,self.relative_path)
     def __str__(self):
         return f"{self.project.project_code} - {self.display_name}"
 
+class ProjectPathTemplate(models.Model):
+    """ 公司级目录规则，保存规则，不代表磁盘上已创建该目录"""
+    name=models.CharField(verbose_name="模版名称",max_length=128)
+    category=models.CharField(
+        verbose_name="资料类别",
+        max_length=24,
+        choices=ProjectResource.CATEGORY_CHOICES,
+    )
+    resource_type=models.CharField(
+        verbose_name="资源类型",
+        max_length=12,
+        choices=ProjectResource.RESOURCE_TYPE_CHOICES,
+        default="folder",
+    )
+    share_root=models.CharField(
+        verbose_name="共享盘",
+        max_length=24,
+        choices=ProjectResource.SHARE_ROOT_CHOICES
+    )
 
+    # 项目目录内部相对路径，例如03_图纸目录
+    # 应用模版时，系统在前面加上项目编号
+    relative_path=models.CharField(
+        verbose_name="项目内相对路径",
+        max_length=500
+    )
+    note=models.CharField(
+        verbose_name="说明",
+        max_length=255,
+        blank=True
+    )
+    sort_order=models.PositiveIntegerField(verbose_name="显示顺序",default=0)
+    is_active=models.BooleanField(verbose_name="启用",default=True)
+
+    created_by=models.ForeignKey(
+        "Account",
+        verbose_name="创建账号",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="created_project_path_templates",
+    )
+    created_at=models.DateTimeField(auto_now_add=True)
+    update_at=models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering=["sort_order","name","id"]
+        constraints=[
+            models.UniqueConstraint(
+                fields=["share_root","relative_path"],
+                name="uniq_path_tpl_root_path",
+            ),
+        ]
+    def __str__(self):
+        return f"{self.name} - {self.relative_path}"
+
+    ...
 class TaskManage(models.Model):
     """任务管理表"""
 
@@ -466,6 +519,49 @@ class TaskManage(models.Model):
     def __str__(self):
         return self.title
 
+class TaskArtifact(models.Model):
+    """员工登记的任务成果路径；只记录位置，不上传文件"""
+    task=models.ForeignKey(
+        TaskManage,
+        verbose_name="所属任务",
+        on_delete=models.PROTECT,
+        related_name="artifacts",
+    )
+
+    display_name = models.CharField(verbose_name="成果名称", max_length=128)
+    resource_type = models.CharField(
+        verbose_name="资源类型",
+        max_length=12,
+        choices=ProjectResource.RESOURCE_TYPE_CHOICES,
+        default="file",
+    )
+    share_root = models.CharField(
+        verbose_name="共享盘",
+        max_length=24,
+        choices=ProjectResource.SHARE_ROOT_CHOICES,
+    )
+    relative_path = models.CharField(verbose_name="成果相对路径", max_length=500)
+    note = models.CharField(verbose_name="说明", max_length=255, blank=True)
+
+    submitted_by = models.ForeignKey(
+        "Account",
+        verbose_name="登记账号",
+        on_delete=models.PROTECT,
+        related_name="submitted_task_artifacts",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at", "-id"]
+
+    @property
+    def display_path(self):
+        """显示完整路径，方便其他有权查看的员工复制。"""
+        return build_display_share_path(self.share_root, self.relative_path)
+
+    def __str__(self):
+        return f"{self.task.title} - {self.display_name}"
+    
 
 class TaskProgressLog(models.Model):
     """任务进度日志，不覆盖之前的说明"""

@@ -4,8 +4,13 @@
     <div class="d-flex align-items-center gap-2 mb-2">
         {% if can_add_project %}
         <a href="{% url 'project_add' %}" class="btn btn-success btn-sm">
-            <i class="bi bi-plus-circle-fill"></i> 
+            <i class="bi bi-plus-circle-fill"></i>
             新建项目
+        </a>
+        {% endif %}
+        {% if can_view_path_templates %}
+        <a class="btn btn-outline-secondary btn-sm" href="{% url 'project_path_template_lst' %}">
+            公共路径模板
         </a>
         {% endif %}
         <form method="get" class="d-flex gap-2 ms-auto">

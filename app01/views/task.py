@@ -7,7 +7,12 @@ from django.http import HttpResponseForbidden
 
 
 from app01 import models
-from app01.utils.form import TaskAssignmentForm, TaskCancelForm, TaskProgressForm
+from app01.utils.form import (
+    TaskAssignmentForm,
+    TaskCancelForm,
+    TaskProgressForm,
+    TaskArtifactForm,
+)
 from app01.utils.pagination import Pagination
 
 from app01.utils.permission import (
@@ -95,7 +100,7 @@ def task_lst(req):
             "status_choices": models.TaskManage.STATUS_CHOICES,
             "can_add_task": account.has_perm("app01.add_taskmanage"),
             "can_change_task": account.has_perm("app01.change_taskmanage"),
-            "can_view_source_order":account.has_perm("app01.view_order"),
+            "can_view_source_order": account.has_perm("app01.view_order"),
         },
     )
 
@@ -133,6 +138,47 @@ def task_add(req):
             "cancel_url": reverse("task_lst"),
             "cancel_label": "返回任务列表",
             "form_max_width": "65rem",
+        },
+    )
+
+
+@require_http_methods(["GET", "POST"])
+@account_permission("app01.add_taskartifact")
+def task_artifact_add(req, task_id):
+    """成果登记"""
+    account = get_current_account(req)
+    task = get_object_or_404(
+        visible_tasks_for(account).select_related("executor"),
+        pk=task_id,
+    )
+
+    # 成果归属执行员工；负责人也只有在任务分配给自己时才能登记。
+    if account.employee_id != task.executor_id:
+        return HttpResponseForbidden("只能为自己执行的任务登记成果路径")
+
+    # 取消的任务不再接收新成果；已完成任务仍可补登记或修正路径。
+    if task.status == models.TaskManage.STATUS_CANCELLED:
+        return HttpResponseForbidden("已取消的任务不能登记成果")
+
+    form = TaskArtifactForm(data=req.POST or None)
+
+    if req.method == "POST" and form.is_valid():
+        artifact = form.save(commit=False)
+        artifact.task = task
+        artifact.submitted_by = account
+        artifact.save()
+        return redirect("task_detail", task_id=task.pk)
+
+    return render(
+        req,
+        "form.html",
+        {
+            "form": form,
+            "page_title": "登记任务成果路径",
+            "submit_label": "保存路径",
+            "cancel_url": reverse("task_detail", kwargs={"task_id": task.pk}),
+            "cancel_label": "返回任务详情",
+            "form_max_width": "55rem",
         },
     )
 
@@ -189,15 +235,26 @@ def _task_detail_context(account, task, progress_form=None, cancel_form=None):
             models.TaskManage.STATUS_CANCELLED,
         )
     )
+    can_add_artifact = (
+        account.has_perm("app01.add_taskartifact")
+        and owns_task
+        and task.status != models.TaskManage.STATUS_CANCELLED
+    )
     can_cancel = account.has_perm("app01.change_taskmanage") and task.status not in (
         models.TaskManage.STATUS_COMPLETED,
         models.TaskManage.STATUS_CANCELLED,
     )
-
+    artifacts = (
+        task.artifacts.select_related("submitted_by").all()
+        if account.has_perm("app01.view_taskartifact")
+        else models.TaskArtifact.objects.none()
+    )
     return {
         "task": task,
         "logs": task.progress_logs.select_related("account").all(),
         "can_update_progress": can_update_progress,
+        "artifacts": artifacts,
+        "can_add_artifact": can_add_artifact,
         "progress_form": progress_form
         or (
             TaskProgressForm(
