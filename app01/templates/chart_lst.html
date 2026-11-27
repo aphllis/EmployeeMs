@@ -18,7 +18,7 @@
             <label for="year-select" class="form-label">统计年份</label>
             <select id="year-select" class="form-select">
                 {% for year in years %}
-                <option value="{{ year }}" {% if year==selected_year %}selected{% endif %}>
+                <option value="{{ year }}" {% if year == selected_year %}selected{% endif %}>
                     {{ year }}年
                 </option>
                 {% endfor %}
@@ -92,7 +92,7 @@
         return {
             tooltip: { trigger: "axis" },
             legend: { bottom: 0 },
-            grid: { left: 55, right: 25, top:30, bottom: 65, containLabel: true },
+            grid: { left: 55, right: 25, top: 30, bottom: 65, containLabel: true },
             xAxis: {
                 type: "category",
                 data: item.labels || [],

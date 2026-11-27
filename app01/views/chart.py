@@ -138,7 +138,7 @@ def _hr_dashboard(year):
                     {
                         "name": "离职",
                         "data": _monthly_counts(
-                            resigned_employees, "employment_end_date", year
+                            models.Employee.objects.all(), "employment_end_date", year
                         ),
                     },
                 ],
@@ -248,7 +248,7 @@ def _project_dashboard(year):
     tasks = models.TaskManage.objects.all()
     unfinished_tasks = tasks.exclude(
         status__in=[
-            models.TaskManage.STATUS_CANCELLED,
+            models.TaskManage.STATUS_COMPLETED,
             models.TaskManage.STATUS_CANCELLED,
         ]
     )
