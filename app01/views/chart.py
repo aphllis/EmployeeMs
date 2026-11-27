@@ -111,8 +111,8 @@ def _hr_dashboard(year):
 
     return {
         "cards": [
-            {"label": "当前在职人数", "values": active_employees.count()},
-            {"label": "今年入职人数", "values": hires_this_year},
+            {"label": "当前在职人数", "value": active_employees.count()},
+            {"label": "今年入职人数", "value": hires_this_year},
             {"label": "今年离职人数", "value": departures_this_year},
         ],
         "charts": [
@@ -162,7 +162,7 @@ def _business_dashboard(year):
     # 按项目逐一计算未回款，避免把项目之间的多笔回款错误地和合同金额重复相乘。
     project_rows = contracted_projects.annotate(
         received_total=Coalesce(
-            Sum("payment__amount"),
+            Sum("payments__amount"),
             Value(ZERO, output_field=AGGREGATE_MONEY_FIELD),
             output_field=AGGREGATE_MONEY_FIELD,
         )
@@ -186,7 +186,7 @@ def _business_dashboard(year):
         if outstanding > ZERO:
             outstanding_rows.append(
                 {
-                    "label": f"{project["project_code"]}{project["name"]}",
+                    "label": f"{project["project_code"]} {project["name"]}",
                     "amount": outstanding,
                 }
             )
@@ -194,7 +194,7 @@ def _business_dashboard(year):
     outstanding_rows = outstanding_rows[:10]
 
     return {
-        "card": [
+        "cards": [
             {"label": "已签约合同金额", "value": _money_text(contract_total)},
             {"label": "累计实际到账", "value": _money_text(received_total)},
             {"label": "尚未回款金额", "value": _money_text(outstanding_total)},
@@ -204,7 +204,7 @@ def _business_dashboard(year):
                 "title": f"{year}年签约金额与实际到账(元)",
                 "type": "bar",
                 "money": True,
-                "labels": _monthly_labels,
+                "labels": _monthly_labels(),
                 "series": [
                     {
                         "name": "签约合同金额",
@@ -283,7 +283,7 @@ def _project_dashboard(year):
             {
                 "title": "项目设计阶段",
                 "type": "bar",
-                "label": [label for _, label in models.Project.STAGE_CHOICES],
+                "labels": [label for _, label in models.Project.STAGE_CHOICES],
                 "series": [
                     {
                         "name": "项目数",
@@ -329,7 +329,7 @@ def _system_dashboard(year):
             {"label": "停用账号", "value": inactive_count},
             {
                 "label": "未分配角色账号",
-                "values": models.Account.objects.filter(groups__isnull=True).count(),
+                "value": models.Account.objects.filter(groups__isnull=True).count(),
             },
         ],
         "charts": [
@@ -358,62 +358,61 @@ def _system_dashboard(year):
 
 @require_GET
 @account_permission_any(*DASHBOARD_PERMISSIONS)
-def char_lst(req):
+def chart_lst(req):
     """只展示当前账号有权限访问的统计视图选项"""
-    account=get_current_account(req)
-    visible_dashboards=[
-        {"key":key,**dashboard}
-        for key,dashboard in DASHBOARDS.items()
+    account = get_current_account(req)
+    visible_dashboards = [
+        {"key": key, **dashboard}
+        for key, dashboard in DASHBOARDS.items()
         if account.has_perm(dashboard["permission"])
     ]
-    selected=req.GET.get("dashboard")
-    visible_keys={
-        dashboard["key"] for dashboard in visible_dashboards
-    }
+    selected = req.GET.get("dashboard")
+    visible_keys = {dashboard["key"] for dashboard in visible_dashboards}
     if selected not in visible_keys:
-        selected=visible_dashboards[0]["key"]
-    current_year=timezone.localdate().year
+        selected = visible_dashboards[0]["key"]
+    current_year = timezone.localdate().year
     return render(
         req,
-        "char_lst.html",
+        "chart_lst.html",
         {
-            "dashboard_options":visible_dashboards,
-            "selected_dashboard":selected,
-            "selected_year":current_year,
-            "years":range(current_year,current_year-5,-1),
+            "dashboard_options": visible_dashboards,
+            "selected_dashboard": selected,
+            "selected_year": current_year,
+            "years": range(current_year, current_year - 5, -1),
         },
     )
 
+
 @require_GET
 @account_permission_any(*DASHBOARD_PERMISSIONS)
-def char_data(req):
+def chart_data(req):
     """按所选视图返回数据，并检查该视图的专属权限"""
-    dashboard_key=req.GET.get("dashboard")
-    dashboard=DASHBOARDS.get(dashboard_key)
+    dashboard_key = req.GET.get("dashboard")
+    dashboard = DASHBOARDS.get(dashboard_key)
 
     if not dashboard:
         return JsonResponse(
-            {"status":False,"error":"未知统计视图"},
+            {"status": False, "error": "未知统计视图"},
             status=400,
         )
-    account=get_current_account(req)
+    account = get_current_account(req)
     if not account.has_perm(dashboard["permission"]):
         return JsonResponse(
-            {"status":False,"error":"没有查看该统计视图的权限"},
+            {"status": False, "error": "没有查看该统计视图的权限"},
             status=403,
         )
-    year=_selected_year(req)
-    buiders={
-        "system":_system_dashboard,
-        "hr":_hr_dashboard,
-        "business":_business_dashboard,
-        "project":_project_dashboard,
+    year = _selected_year(req)
+    buiders = {
+        "system": _system_dashboard,
+        "hr": _hr_dashboard,
+        "business": _business_dashboard,
+        "project": _project_dashboard,
     }
     return JsonResponse(
         {
-            "status":True,
-            "dashboard":dashboard_key,
-            "year":year,
+            "status": True,
+            "dashboard": dashboard_key,
+            "year": year,
             **buiders[dashboard_key](year),
         }
     )

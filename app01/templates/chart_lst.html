@@ -8,7 +8,7 @@
             <label for="dashboard-select" class="form-label">统计视图</label>
             <select id="dashboard-select" class="form-select">
                 {% for item in dashboard_options %}
-                <option value="{{ item.key }}" {% if item.key==selected_dashboard %}selected{% endif %}>
+                <option value="{{ item.key }}" {% if item.key == selected_dashboard %}selected{% endif %}>
                     {{ item.title }}
                 </option>
                 {% endfor %}
@@ -45,7 +45,7 @@
     let clearCharts = () => {
         chartInstances.forEach(chart => chart.dispose());
         chartInstances = [];
-        chartsElment.replaceChildren();
+        chartsElement.replaceChildren();
     }
     // 使用 textContent 显示接口文字，避免把数据库内容当作 HTML 插入页面。创建统计数字卡片
     function renderCards(cards) {
@@ -92,10 +92,10 @@
         return {
             tooltip: { trigger: "axis" },
             legend: { bottom: 0 },
-            grid: { left: 55, right: 25, top30, bottom: 65, containLabel: true },
+            grid: { left: 55, right: 25, top:30, bottom: 65, containLabel: true },
             xAxis: {
                 type: "category",
-                data: item / labels || [],
+                data: item.labels || [],
                 axisLabel: {
                     interval: 0,
                     rotate: (item.labels || []).length > 6 ? 25 : 0
