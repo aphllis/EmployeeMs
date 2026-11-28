@@ -404,7 +404,7 @@ class ProjectPathTemplate(models.Model):
         related_name="created_project_path_templates",
     )
     created_at=models.DateTimeField(auto_now_add=True)
-    update_at=models.DateTimeField(auto_now=True)
+    updated_at=models.DateTimeField(auto_now=True)
 
     class Meta:
         ordering=["sort_order","name","id"]

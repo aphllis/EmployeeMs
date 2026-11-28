@@ -2,6 +2,7 @@ from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST, require_http_methods
+from django.db.models import Q
 
 from app01 import models
 from app01.utils.form import ProjectPathTemplateForm
@@ -17,9 +18,9 @@ def project_path_template_lst(req):
 
     if search:
         queryset = queryset.filter(
-            models.Q(name__icontains=search)
-            | models.Q(relative_path__icontains=search)
-            | models.Q(note__icontains=search)
+            Q(name__icontains=search)
+            | Q(relative_path__icontains=search)
+            | Q(note__icontains=search)
         )
     if queryset.exists():
         page = Pagination(request=req, queryset=queryset, page_size=20)

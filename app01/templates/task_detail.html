@@ -163,3 +163,25 @@
     </div>
 </div>
 {% endblock %}
+
+{% block js %}
+<script>
+    document.querySelectorAll(".copy-path").forEach(function (button) {
+        button.addEventListener("click", async function () {
+            const path = button.dataset.path;
+
+            if (!navigator.clipboard) {
+                alert("浏览器不支持自动复制，请选中路径后手动复制。");
+                return;
+            }
+
+            try {
+                await navigator.clipboard.writeText(path);
+                button.textContent = "已复制";
+            } catch (error) {
+                alert("复制失败，请选中路径后手动复制。");
+            }
+        });
+    });
+</script>
+{% endblock %}
